@@ -97,7 +97,7 @@ def gen_array(arr, num=1, channels=1):
 
 #-------------------------------------------
 
-class Player(object):
+class AudiPlayer(object):
     """ Play and record manager """
     def __init__(self):
         self._audio_driver = None
@@ -552,106 +552,124 @@ class Player(object):
     
 #========================================
 
-def display(msg):
-    print(msg)
-#------------------------------------------------------------------------------
+class MainApp(object):
+    """ Main application manager """
+    def __init__(self):
+        self.player = None
+        pass
 
-def main(input_device_index, output_device_index):
-    pl = Player()
-    pl.init_player(input_device_index, output_device_index)
-    # pl.start_driver()
-    
-    msg = "Press '?' or 'h' for help"
-    display(msg)
-    sav_str = ''
-    while 1:
-        val_str = input("-> ")
-        if val_str == '': val_str = sav_str
-        else: sav_str = val_str
+    #------------------------------------------------------------------------------
 
-        if val_str in ('q', 'Q'):
-            pl.close()
-            display("Quit...")
-            break
+    def display(self, msg):
+        print(msg)
 
-        elif val_str == 'b': # Forward
-            pos = pl.forward()
-            pos = pl.samples_to_sec(pos)
-            msg = f"Time at: {pos:.3f} Secs"
-            display(msg)
-        elif val_str in (' ', 't', 'p'):
-            if not pl.is_playing():
-                msg = "Play"
-                pl.play()
-            else:
-                pl.pause()
-                pos = pl.get_position()
-                pos = pl.samples_to_sec(pos) # convert to sec
-                msg = f"Pause at: {pos:.3f} secs"
-            display(msg)
-        elif val_str == 'T':
-            pl.start_driver()
-        elif val_str == 'r':
-            # toggle record
-            if not pl.is_recording():
-                pl.start_record()
-                msg = "Record"
-            else:
-                pl.stop_record()
-                msg = "Stop Record"
-            display(msg)
-        elif val_str == 'R':
-            # toggle record mode
-            val = pl.toggle_rec_mode()
-            if val == 0:
-                msg = "Record mode Replace"
-            else:
-                msg = "Record mode Mix"
-            display(msg)
-        elif val_str == 'S':
-            pl.stop_driver()
-        elif  val_str == 'u': # Status
-            pos = pl.get_position()
-            pos = pl.samples_to_sec(pos)
-            # start_loop = self.player.get_start_loop()
-            # end_loop = self.player.get_end_loop()
-            msg = f"Position: {pos:.3f} Secs"
-            display(msg)
-            # self.display(msg)
-        elif val_str == 'v':
-            pl.stop()
-            pos = pl.get_position()
-            pos = pl.samples_to_sec(pos)
-            msg = f"Stop at: {pos:.3f} Secs"
-            display(msg)
-        elif val_str == 'w': # Rewind
-            pos = pl.rewind()
-            pos = pl.samples_to_sec(pos)
-            msg = f"Time at: {pos:.3f} Secs"
-            display(msg)
-        elif val_str == 'z': # wiring
-            pl.recwire()
-        elif val_str == '<': # goto start
-            pos = pl.goto_start()
-            pos = pl.samples_to_sec(pos)
-            msg = f"Goto Start at: {pos:.3f} Secs"
-            display(msg)
-        elif val_str == '>': # goto End
-            pos = pl.goto_end()
-            pos = pl.samples_to_sec(pos)
-            msg = f"Goto End at: {pos:.3f} Secs"
-            display(msg)
-        elif val_str in ('?', 'h',):
-            display(_help)
-        elif val_str == 'dev':
-            pl.print_devices()
+    #------------------------------------------------------------------------------
+
+    def init_app(self, input_device_index, output_device_index):
+        self.player = AudiPlayer()
+        self.player.init_player(input_device_index, output_device_index)
+        # pl.start_driver()
+
+    #------------------------------------------------------------------------------
+ 
+    def main(self, input_device_index, output_device_index):
+        self.init_app(input_device_index, output_device_index)
+        msg = "Press '?' or 'h' for help"
+        
+        self.display(msg)
+        sav_str = ''
+        while 1:
+            val_str = input("-> ")
+            if val_str == '': val_str = sav_str
+            else: sav_str = val_str
+
+            if val_str in ('q', 'Q'):
+                self.player.close()
+                self.display("Quit...")
+                break
+
+            elif val_str == 'b': # Forward
+                pos = self.player.forward()
+                pos = self.player.samples_to_sec(pos)
+                msg = f"Time at: {pos:.3f} Secs"
+                self.display(msg)
+            elif val_str in (' ', 't', 'p'):
+                if not self.player.is_playing():
+                    msg = "Play"
+                    self.player.play()
+                else:
+                    self.player.pause()
+                    pos = self.player.get_position()
+                    pos = self.player.samples_to_sec(pos) # convert to sec
+                    msg = f"Pause at: {pos:.3f} secs"
+                self.display(msg)
+            elif val_str == 'T':
+                self.player.start_driver()
+            elif val_str == 'r':
+                # toggle record
+                if not self.player.is_recording():
+                    self.player.start_record()
+                    msg = "Record"
+                else:
+                    self.player.stop_record()
+                    msg = "Stop Record"
+                self.display(msg)
+            elif val_str == 'R':
+                # toggle record mode
+                val = self.player.toggle_rec_mode()
+                if val == 0:
+                    msg = "Record mode Replace"
+                else:
+                    msg = "Record mode Mix"
+                self.display(msg)
+            elif val_str == 'S':
+                self.player.stop_driver()
+            elif  val_str == 'u': # Status
+                pos = self.player.get_position()
+                pos = self.player.samples_to_sec(pos)
+                # start_loop = self.player.get_start_loop()
+                # end_loop = self.player.get_end_loop()
+                msg = f"Position: {pos:.3f} Secs"
+                self.display(msg)
+                # self.self.display(msg)
+            elif val_str == 'v':
+                self.player.stop()
+                pos = self.player.get_position()
+                pos = self.player.samples_to_sec(pos)
+                msg = f"Stop at: {pos:.3f} Secs"
+                self.display(msg)
+            elif val_str == 'w': # Rewind
+                pos = self.player.rewind()
+                pos = self.player.samples_to_sec(pos)
+                msg = f"Time at: {pos:.3f} Secs"
+                self.display(msg)
+            elif val_str == 'z': # wiring
+                self.player.recwire()
+            elif val_str == '<': # goto start
+                pos = self.player.goto_start()
+                pos = self.player.samples_to_sec(pos)
+                msg = f"Goto Start at: {pos:.3f} Secs"
+                self.display(msg)
+            elif val_str == '>': # goto End
+                pos = self.player.goto_end()
+                pos = self.player.samples_to_sec(pos)
+                msg = f"Goto End at: {pos:.3f} Secs"
+                self.display(msg)
+            elif val_str in ('?', 'h',):
+                self.display(_help)
+            elif val_str == 'dev':
+                self.player.print_devices()
 
 
-#----------------------------------------
+    #----------------------------------------
+
+#========================================
+
 
 if __name__ == "__main__":
     input_device_index =6 # External Soundcard
     # output_device_index =5 # Default output Soundcard
     output_device_index =6 # External Soundcard
-    main(input_device_index, output_device_index)
+    app = MainApp()
+    app.main(input_device_index, output_device_index)
 #----------------------------------------
