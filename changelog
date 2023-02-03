@@ -1,0 +1,33 @@
+-- changelog for audinotes
+Date: Fri, 03/02/2023
+Last update: Fri, 03/02/2023
+
+
+Last update: Fri, 03/02/2023
+-- Version: 0.1
+-- Adding:
+		portdriver class for audio managing
+		Player class for managing audio tracks.
+		Commandline Interactive for functions.
+		Adding functions:
+		play, pause, stop, start_record, stop_record, toggle_rec_mode, recwire,
+		arrange_track,get_position, set_position, get_length, rewind, forward,  goto_start, goto_end,
+		is_running, is_playing, is_paused, is_recording,
+		samples_to_sec.
+		Adding help for commands.
+
+
+Last update: Wed, 01/02/2023
+Version: 0.1
+-- Test unlimited recording on PyAudio
+Inspired from playrec module.
+Note: Work fine.
+with: output_device_index =15: default output Soundcard with only output
+input_device_index =0: default Input Soundcard, with only input
+output_device_index =6: Eternal output Soundcard
+input_device_index =6: External input Soundcard
+        
+Date: samedi, 26/07/14 02/43/56
+Author: Coolbrother
+
+
