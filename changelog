@@ -1,7 +1,13 @@
 -- changelog for audinotes
 Date: Fri, 03/02/2023
-Last update: Fri, 03/02/2023
+Last update: Sat, 04/02/2023
 
+
+Last update: Sat, 04/02/2023
+-- Version 0.2: Lite and Simple
+-- Adding: (get_state, toggle_record, notify functions to the AudiPlayer
+class), and adding commands (sta, status to the MainApp class))
+-- Adding: (MainApp class for interface managing)
 
 Last update: Fri, 03/02/2023
 -- Version: 0.1
