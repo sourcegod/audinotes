@@ -38,13 +38,13 @@ _help = """ Help on Player
   R: toggle record mode (replace, mix)
   S: stop the Engine
   T: start the Engine
-  u: status
   w: rewind
   v: stop
   z: wiring
   <: goto start
   >: goto end
   dev: display devices infomations
+  sta, status: display player status and position in secs
 
 """
 
@@ -96,6 +96,142 @@ def gen_array(arr, num=1, channels=1):
         yield arr[num*i:num*(i+1)]
 
 #-------------------------------------------
+class AudiTrack(object):
+    """ Track audio object """
+    def __init__(self):
+        self.id = id
+        self._active =0
+        self._muted =0
+        self._buf_arr = np.array([], dtype=np.float32)
+        self._pos =0
+        self._len =0
+
+    #-------------------------------------------
+
+    def get_data(self):
+        """
+        returns numpy array
+        """
+
+        return self._buf_arr
+
+    #-------------------------------------------
+
+    def set_data(self, arr):
+        """
+        set data to the track
+        from Track object
+        """
+
+        if arr is not None:
+            self._buf_arr = arr
+            self._len = self._buf_arr.size
+            # self._pos =0
+
+    #-----------------------------------------
+    
+    def get_length(self, unit=0):
+        """
+        return total track length 
+        from track object
+        """
+
+        return self._len
+    
+    #-----------------------------------------
+    
+    def init_position(self):
+        """
+        init track position 
+        from track object
+        """
+        
+        self.set_position(0, 0) # in frames
+        
+    #-----------------------------------------
+
+    def get_position(self, unit=0):
+        """
+        return track position
+        from Track object
+        """
+
+        return self._pos
+
+    #-----------------------------------------
+
+    def set_position(self, pos, unit=0):
+        """
+        set track position 
+        from track object
+        """
+
+        if pos <0: pos =0
+        elif pos > self._len: pos = self._len
+        
+        self._pos = pos
+
+    #-----------------------------------------
+
+    def is_active(self):
+        """
+        returns active state for this track
+        from Track object
+        """
+        
+        return self._active
+
+    #-----------------------------------------
+
+    def set_active(self, active):
+        """ 
+        set active state for this track
+        from Track object
+        """
+
+        self._active = active
+
+    #-----------------------------------------
+
+    def get_mute(self):
+        return (self._leftmute, self._rightmute)
+    
+    #-----------------------------------------
+
+    def is_muted(self):
+        return self._muted
+    
+    #-----------------------------------------
+ 
+    def set_muted(self, muted=0, chanside=2):
+        # set channel mute
+        val =0 if muted else 1 # ternary operator
+        if chanside == 0: # left channel side
+            self._leftmute = val
+        elif chanside == 1: # right channel side
+            self._rightmute = val
+        elif chanside == 2: # both channel side
+            self._leftmute = val
+            self._rightmute = val
+
+        self._muted = muted
+
+
+    #-----------------------------------------
+
+    def write_sound(self, out_data, count):
+        curdata = self._buf_arr
+        if not curdata.size: return
+        pos = self._pos
+        _len = self._len
+        for i in range(count):
+            if pos < _len:
+                out_data[i] = curdata[pos]
+                pos += 1
+        self._pos = pos
+    
+    #-----------------------------------------
+#========================================
 
 class AudiPlayer(object):
     """ Play and record manager """
@@ -106,7 +242,8 @@ class AudiPlayer(object):
         self._rate =44100
         self._buf_size = 1024
         self._play_track = None
-        self._play_track = get_sine_table(freq=440, rate=44100, channels=2, _len=5)
+        # self._play_track = get_sine_table(freq=440, rate=44100, channels=2, _len=5)
+        self._curtrack = None
         self._pos =0
         self._playing =0
         self._recording =0
@@ -140,6 +277,9 @@ class AudiPlayer(object):
         self._channels = self._audio_driver._channels
         self._rate = self._audio_driver._rate
         self._buf_size = self._audio_driver._buf_size
+        self._curtrack = AudiTrack()
+        arr = get_sine_table(freq=440, rate=44100, channels=2, _len=5)
+        self._curtrack.set_data(arr)
 
     
     #-------------------------------------------
@@ -186,26 +326,45 @@ class AudiPlayer(object):
             beep()
             
         data_size = frame_count  * self._channels
-        data = np.zeros(data_size, dtype=np.float32)
+        out_data = np.zeros(data_size, dtype=np.float32)
         # print(f"frame_count: {frame_count}")
+        
+        curtrack = self._curtrack
+        curdata = curtrack.get_data()
+        curpos = curtrack._pos
+        curlen = curtrack._len
         if self._playing:
-            play_data = self.get_data(self._play_track, self._pos, data_size)
+            if curpos < curlen:
+                curtrack.write_sound(out_data, data_size)
+            else:
+                if self._playing and not self._recording:
+                    self.pause()
+                    pos = self.samples_to_sec(curpos)
+                    msg = f"Paused at: {pos:.3f} Secs"
+                    self.notify(msg)
+
+            """
+            # play_data = self.get_data(curdata, curpos, data_size)
+            # play_data = self.get_data(self._play_track, self._pos, data_size)
             # check that callback continue with enough array data
             if play_data.size >= data_size:
-                data = play_data
-                self._pos += play_data.size
+                out_data = play_data
+                curpos += play_data.size
+                curtrack.set_position(curpos)
             elif play_data.size >0 and play_data.size < data_size:
                 # resizing data to continue process callback
-                data = play_data.copy()
-                data.resize(data_size)
-                self._pos += play_data.size
+                out_data = play_data.copy()
+                out_data.resize(data_size)
+                curpos += play_data.size
+                curtrack.set_position(curpos)
                 # print(f"play_data size: {play_data.size}")
             else:
                 if self._playing and not self._recording:
                     self.pause()
-                    pos = self.samples_to_sec(self._pos)
+                    pos = self.samples_to_sec(curpos)
                     msg = f"Paused at: {pos:.3f} Secs"
                     self.notify(msg)
+            """
 
         if self._recording and self._rec_mode == 0: # record in replace mode
             rec_data = np.frombuffer(in_data, dtype=np.float32)
@@ -216,13 +375,13 @@ class AudiPlayer(object):
             self._deq_data.append(rec_data)
 
         elif self._wiring:
-            data = in_data
+            out_data = in_data
 
         # beep()
-        if not isinstance(data, bytes):
-            return (data.tobytes(), flag_continue)
+        if not isinstance(out_data, bytes):
+            return (out_data.tobytes(), flag_continue)
         
-        return (data, flag_continue)
+        return (out_data, flag_continue)
 
     #-----------------------------------------
 
@@ -243,56 +402,60 @@ class AudiPlayer(object):
         len_deq = len(self._deq_data)
         if not len_deq: return
         print("Arranging track...")
-        play_track = self._play_track
-        play_len = self._play_track.size
+        curtrack = self._curtrack
+        if not curtrack: return
+        play_data = curtrack.get_data()
+        # play_data = self._play_data
+        play_len = play_data.size
         if self._rec_pos > 0 and self._rec_pos <= play_len:
-            # copy play_track part
+            # copy play_data part
             if self._rec_mode == 0: # replace mode
-                part_track = play_track[:self._rec_pos]
+                part_data = play_data[:self._rec_pos]
             else:
-                part_track = np.zeros(self._rec_pos)
-            lst.append(part_track)
+                part_data = np.zeros(self._rec_pos)
+            lst.append(part_data)
         lst.extend([self._deq_data.popleft() for i in range(len_deq)])
-        # creating rec_track to adding part_track and the deque items
-        rec_track = np.concatenate(lst)
-        # rec_len = self._rec_pos + (len_deq * self._data_size)
-        rec_len = rec_track.size
+        # creating rec_data to adding part_track and the deque items
+        rec_data = np.concatenate(lst)
+        rec_len = rec_data.size
         
         if self._rec_mode == 0: # replace mode
             if play_len < rec_len:
-                # Just replacing play_track by rec_track
-                self._play_track = rec_track
+                # Just replacing play_data by rec_data
+                curtrack.set_data(rec_data)
+                # self._play_data = rec_data
             elif play_len >= rec_len:
+                # print(f"voici play_len: {play_len}, rec_len: {rec_len}")
                 # take play_len as longest track
-                final_track = np.zeros(play_len, dtype=np.float32)
-                # Adding rec_track to the final_track
+                final_data = np.zeros(play_len, dtype=np.float32)
+                # Adding rec_data to the final_data
                 for i in range(rec_len):
-                    final_track[i] = rec_track[i]
-                # Adding the rest for play_track to the final_track
+                    final_data[i] = rec_data[i]
+                # Adding the rest for play_data to the final_data
                 for i in range(rec_len, play_len):
-                    final_track[i] = play_track[i]
-                    self._play_track = final_track
+                    final_data[i] = play_data[i]
+                curtrack.set_data(final_data)
        
         elif self._rec_mode == 1: # mix mode
             if play_len < rec_len:
                 # take rec_len as longest track
-                final_track = np.zeros(rec_len, dtype=np.float32)
-                # Adding play_track + rec_track to the final_track
+                final_data = np.zeros(rec_len, dtype=np.float32)
+                # Adding play_data + rec_data to the final_data
                 for i in range(play_len):
-                    final_track[i] = (play_track[i] + rec_track[i]) * vol
-                # Adding the rest for play_track to the final_track
+                    final_data[i] = (play_data[i] + rec_data[i]) * vol
+                # Adding the rest of rec_data to the final_data
                 for i in range(play_len, rec_len):
-                    final_track[i] = rec_track[i] * vol
+                    final_data[i] = rec_data[i] * vol
             elif play_len >= rec_len:
                 # take play_len as longest track
-                final_track = np.zeros(play_len, dtype=np.float32)
-                # Adding rec_track + play_track to the final_track
+                final_data = np.zeros(play_len, dtype=np.float32)
+                # Adding rec_data + play_data to the final_data
                 for i in range(rec_len):
-                    final_track[i] = (rec_track[i] + play_track[i]) * vol
-                # Adding the rest of play_track to the final_track
+                    final_data[i] = (rec_data[i] + play_data[i]) * vol
+                # Adding the rest of play_data to the final_data
                 for i in range(rec_len, play_len):
-                    final_track[i] = play_track[i] * vol
-            self._play_track = final_track
+                    final_data[i] = play_data[i] * vol
+            curtrack.set_data(final_data)
  
     #-----------------------------------------
 
@@ -325,7 +488,7 @@ class AudiPlayer(object):
         
         self._mixing =0
         self._wiring =0
-        self._pos =0
+        self._curtrack.set_position(0)
         print("Stopped...")
         
     #-----------------------------------------
@@ -395,7 +558,6 @@ class AudiPlayer(object):
     def stop_record(self):
         print("Stop Recording...")
         self._recording =0
-        self._mixing =0
         self.arrange_track()
         if len(self._deq_data):
             self._deq_data.clear()
@@ -449,8 +611,9 @@ class AudiPlayer(object):
         from AudioPlayer object
         """
 
-        return self._pos
-   
+        if not self._curtrack: return 0
+        return self._curtrack._pos
+
     #-----------------------------------------
 
     def set_position(self, pos, unit=0):
@@ -464,17 +627,15 @@ class AudiPlayer(object):
         from AudioPlayer object
         """
 
+        if not self._curtrack: return
         state =0
-        # first convert pos to frames
         if self._playing:
             state =1
         
-        if pos >=0 and pos <= self.get_length():
-            self._pos = pos
-
+        self._curtrack.set_position(pos)
         if state:
             time.sleep(0.1)
-            # self.start_seq()
+            self.play()
             pass
         
     #-----------------------------------------
@@ -486,7 +647,9 @@ class AudiPlayer(object):
         from Audioplayer 
         """
 
-        return self._play_track.size
+        if not self._curtrack: return 0
+        return self._curtrack._len
+
        
     #-----------------------------------------
 
