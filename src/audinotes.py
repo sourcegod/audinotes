@@ -99,7 +99,8 @@ def gen_array(arr, num=1, channels=1):
 
 class AudiPlayer(object):
     """ Play and record manager """
-    def __init__(self):
+    def __init__(self, parent=None):
+        self._parent = parent
         self._audio_driver = None
         self._channels =2
         self._rate =44100
@@ -121,6 +122,16 @@ class AudiPlayer(object):
 
     #-------------------------------------------
 
+    def notify(self, msg):
+        """
+        Send message to the parent object 
+        from AudiPlayer object
+        """
+
+        if self._parent:
+            self._parent.display(msg)
+    #-------------------------------------------
+    
     def init_player(self, input_device_index, output_device_index):
         self._audio_driver = pdv.PortDriver()
         self._audio_driver.init_devices(input_device_index, output_device_index)
@@ -183,33 +194,24 @@ class AudiPlayer(object):
             if play_data.size >= data_size:
                 data = play_data
                 self._pos += play_data.size
+            elif play_data.size >0 and play_data.size < data_size:
+                # resizing data to continue process callback
+                data = play_data.copy()
+                data.resize(data_size)
+                self._pos += play_data.size
+                # print(f"play_data size: {play_data.size}")
             else:
-                # self.stop()
-                pass
+                if self._playing and not self._recording:
+                    self.pause()
+                    pos = self.samples_to_sec(self._pos)
+                    msg = f"Paused at: {pos:.3f} Secs"
+                    self.notify(msg)
+
         if self._recording and self._rec_mode == 0: # record in replace mode
             rec_data = np.frombuffer(in_data, dtype=np.float32)
             self._deq_data.append(rec_data)
             
-            """
-            for i in range(rec_data.size):
-                if self._pos < self._play_track.size:
-                    self._play_track[self._pos] = rec_data[i]
-                    self._pos += 1
-                else:
-                    self.stop()
-            """
-
         elif self._recording and self._rec_mode == 1: # rec in merge mode
-            
-            """
-            play_data = self.get_data(self._play_track, self._pos, data_size)
-            # check that callback continue with enough array data
-            if play_data.size >= data_size:
-                data = play_data
-                self._pos += play_data.size
-            else:
-                pass
-            """
             rec_data = np.frombuffer(in_data, dtype=np.float32)
             self._deq_data.append(rec_data)
 
@@ -358,6 +360,22 @@ class AudiPlayer(object):
 
     #-----------------------------------------
 
+    def get_state(self):
+        """ 
+        Returns player state
+        """
+
+        msg = ""
+        if self._playing and not self._recording: msg = "Playing"
+        elif self._recording: msg = "Recording"
+        elif self._paused: msg = "Paused"
+        else: msg = "Stopped"
+
+        return msg
+   
+    #-----------------------------------------
+
+
 
     def start_record(self):
         self._rec_pos = self.get_position()
@@ -383,25 +401,27 @@ class AudiPlayer(object):
             self._deq_data.clear()
         
     #-----------------------------------------
+    
+    def toggle_record(self):
+        """
+        Returns recording state
+        """
+        
+        if not self._recording:
+            self.start_record()
+        else:
+            self.stop_record()
+        
+        return self._recording
+    
+    #-----------------------------------------
 
     def toggle_rec_mode(self):
         """
-        Returns toggle recording mode
+        Returns recording mode state
         """
         
         self._rec_mode = not self._rec_mode
-
-        """
-        self._rec_pos = self.get_position()
-        self._playing =0
-        self._recording =0
-        self._rec_mode =1 # overdub mode
-        self._mixing =1
-        self._rewing =0
-        if not self.is_running():
-            self.start_driver()
-        print("Mixing...")
-        """
 
         return self._rec_mode
         
@@ -566,7 +586,7 @@ class MainApp(object):
     #------------------------------------------------------------------------------
 
     def init_app(self, input_device_index, output_device_index):
-        self.player = AudiPlayer()
+        self.player = AudiPlayer(parent=self)
         self.player.init_player(input_device_index, output_device_index)
         # pl.start_driver()
 
@@ -607,13 +627,11 @@ class MainApp(object):
                 self.player.start_driver()
             elif val_str == 'r':
                 # toggle record
-                if not self.player.is_recording():
-                    self.player.start_record()
-                    msg = "Record"
-                else:
-                    self.player.stop_record()
-                    msg = "Stop Record"
+                val = self.player.toggle_record()
+                if val: msg = "Start Record"
+                else: msg = "Stop Record"
                 self.display(msg)
+
             elif val_str == 'R':
                 # toggle record mode
                 val = self.player.toggle_rec_mode()
@@ -624,12 +642,13 @@ class MainApp(object):
                 self.display(msg)
             elif val_str == 'S':
                 self.player.stop_driver()
-            elif  val_str == 'u': # Status
+            elif  val_str in ('sta', 'status'): # Status
+                state = self.player.get_state()
                 pos = self.player.get_position()
                 pos = self.player.samples_to_sec(pos)
                 # start_loop = self.player.get_start_loop()
                 # end_loop = self.player.get_end_loop()
-                msg = f"Position: {pos:.3f} Secs"
+                msg = f"{state}, Position: {pos:.3f} Secs"
                 self.display(msg)
                 # self.self.display(msg)
             elif val_str == 'v':
