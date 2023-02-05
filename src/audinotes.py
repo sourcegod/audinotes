@@ -280,12 +280,12 @@ class AudiPlayer(object):
         self._playing =0
         self._recording =0
         self._paused =0
-        self._mixing =0
         self._wiring =0
         self._deq_data = deque()
         self._data_size = self._buf_size * self._channels
         self._sample_unit = self._rate * self._channels
-        self._rec_pos =0
+        self._rec_startpos =0
+        self._rec_endpos =0
         self._rec_mode =0 # replace mode
         pass
 
@@ -404,33 +404,34 @@ class AudiPlayer(object):
         
         lst = []
         vol =0.5 # atenuation
+        finished =0
         len_deq = len(self._deq_data)
         if not len_deq: return
         print("Arranging track...")
         curtrack = self._curtrack
         if not curtrack: return
         play_data = curtrack.get_data()
-        # play_data = self._play_data
         play_len = play_data.size
-        if self._rec_pos > 0 and self._rec_pos <= play_len:
+        if self._rec_startpos > 0 and self._rec_startpos <= play_len:
             # copy play_data part
             if self._rec_mode == 0: # replace mode
-                part_data = play_data[:self._rec_pos]
+                part_data = play_data[:self._rec_startpos]
             else:
-                part_data = np.zeros(self._rec_pos)
+                part_data = np.zeros(self._rec_startpos)
             lst.append(part_data)
         lst.extend([self._deq_data.popleft() for i in range(len_deq)])
         # creating rec_data to adding part_track and the deque items
         rec_data = np.concatenate(lst)
         rec_len = rec_data.size
+        # resets position after recording
+        if rec_len >= play_len:
+            finished =1
         
         if self._rec_mode == 0: # replace mode
             if play_len < rec_len:
                 # Just replacing play_data by rec_data
                 curtrack.set_data(rec_data)
-                # self._play_data = rec_data
             elif play_len >= rec_len:
-                # print(f"voici play_len: {play_len}, rec_len: {rec_len}")
                 # take play_len as longest track
                 final_data = np.zeros(play_len, dtype=np.float32)
                 # Adding rec_data to the final_data
@@ -461,7 +462,9 @@ class AudiPlayer(object):
                 for i in range(rec_len, play_len):
                     final_data[i] = play_data[i] * vol
             curtrack.set_data(final_data)
- 
+        if  finished:
+            curtrack.set_position(rec_len)
+    
     #-----------------------------------------
 
 
@@ -488,10 +491,9 @@ class AudiPlayer(object):
      
     def stop(self):
         self._playing =0
-        if self._recording or self._mixing:
+        if self._recording:
             self.stop_record()
         
-        self._mixing =0
         self._wiring =0
         self._curtrack.set_position(0)
         print("Stopped...")
@@ -547,7 +549,7 @@ class AudiPlayer(object):
 
     def start_record(self):
         if not self._curtrack: return
-        self._rec_pos = self.get_position()
+        self._rec_startpos = self.get_position()
         if self._rec_mode == 0: # replace mode
             self._curtrack.set_arm_muted(1)
         self._playing =1
@@ -601,7 +603,6 @@ class AudiPlayer(object):
 
         self._playing =0
         self._recording =0
-        self._mixing =0
         self._wiring =1
         if not self.is_running():
             self.start_driver()
