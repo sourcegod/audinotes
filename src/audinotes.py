@@ -273,8 +273,6 @@ class AudiPlayer(object):
         self._channels =2
         self._rate =44100
         self._buf_size = 1024
-        self._play_track = None
-        # self._play_track = get_sine_table(freq=440, rate=44100, channels=2, _len=5)
         self._curtrack = None
         self._pos =0
         self._playing =0
@@ -405,7 +403,8 @@ class AudiPlayer(object):
         lst = []
         vol =0.5 # atenuation
         finished =0
-        len_deq = len(self._deq_data)
+        deq_data = self._deq_data
+        len_deq = len(deq_data)
         if not len_deq: return
         print("Arranging track...")
         curtrack = self._curtrack
@@ -418,10 +417,10 @@ class AudiPlayer(object):
                 part_data = play_data[:self._rec_startpos]
             else:
                 part_data = np.zeros(self._rec_startpos)
-            lst.append(part_data)
-        lst.extend([self._deq_data.popleft() for i in range(len_deq)])
-        # creating rec_data to adding part_track and the deque items
-        rec_data = np.concatenate(lst)
+            # using deq appendleft method for better performance than a list, no need to create a new list
+            deq_data.appendleft(part_data)
+        # creating rec_data to adding part_data and the deque items
+        rec_data = np.concatenate(deq_data)
         rec_len = rec_data.size
         # resets position after recording
         if rec_len >= play_len:
