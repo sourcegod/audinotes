@@ -102,6 +102,7 @@ class AudiTrack(object):
         self.id = id
         self._active =0
         self._muted =0
+        self._arm_muted =0
         self._buf_arr = np.array([], dtype=np.float32)
         self._pos =0
         self._len =0
@@ -216,18 +217,49 @@ class AudiTrack(object):
 
         self._muted = muted
 
+    #-----------------------------------------
+
+    def is_arm_muted(self):
+        """
+        return internal mute state for armed track
+        from Track object
+        """
+        
+        return self._arm_muted
 
     #-----------------------------------------
 
-    def write_sound(self, out_data, count):
+    def set_arm_muted(self, arm_muted=0):
+        """
+        set internal mute state for armed track
+        from Track object
+        """
+        
+        self._arm_muted  = arm_muted
+
+    #-----------------------------------------
+
+    def write_sound(self, out_data, data_count):
+        """
+        writing curdata to the out_data
+        from AudiTrack object
+        """
+
         curdata = self._buf_arr
         if not curdata.size: return
         pos = self._pos
         _len = self._len
-        for i in range(count):
-            if pos < _len:
-                out_data[i] = curdata[pos]
-                pos += 1
+        
+        if self._muted or self._arm_muted:
+            # dont write any data, just increment curpos
+            for i in range(data_count):
+                if pos < _len:
+                    pos += 1
+        else:
+            for i in range(data_count):
+                if pos < _len:
+                    out_data[i] = curdata[pos]
+                    pos += 1
         self._pos = pos
     
     #-----------------------------------------
@@ -325,57 +357,30 @@ class AudiPlayer(object):
             print(f"Status Error: {status}")
             beep()
             
-        data_size = frame_count  * self._channels
-        out_data = np.zeros(data_size, dtype=np.float32)
+        data_count = frame_count  * self._channels
+        out_data = np.zeros(data_count, dtype=np.float32)
         # print(f"frame_count: {frame_count}")
         
         curtrack = self._curtrack
         curdata = curtrack.get_data()
         curpos = curtrack._pos
         curlen = curtrack._len
-        if self._playing:
-            if curpos < curlen:
-                curtrack.write_sound(out_data, data_size)
-            else:
-                if self._playing and not self._recording:
-                    self.pause()
-                    pos = self.samples_to_sec(curpos)
-                    msg = f"Paused at: {pos:.3f} Secs"
-                    self.notify(msg)
-
-            """
-            # play_data = self.get_data(curdata, curpos, data_size)
-            # play_data = self.get_data(self._play_track, self._pos, data_size)
-            # check that callback continue with enough array data
-            if play_data.size >= data_size:
-                out_data = play_data
-                curpos += play_data.size
-                curtrack.set_position(curpos)
-            elif play_data.size >0 and play_data.size < data_size:
-                # resizing data to continue process callback
-                out_data = play_data.copy()
-                out_data.resize(data_size)
-                curpos += play_data.size
-                curtrack.set_position(curpos)
-                # print(f"play_data size: {play_data.size}")
-            else:
-                if self._playing and not self._recording:
-                    self.pause()
-                    pos = self.samples_to_sec(curpos)
-                    msg = f"Paused at: {pos:.3f} Secs"
-                    self.notify(msg)
-            """
-
-        if self._recording and self._rec_mode == 0: # record in replace mode
+        # Test recording before playing to be faster
+        if self._recording:
             rec_data = np.frombuffer(in_data, dtype=np.float32)
             self._deq_data.append(rec_data)
-            
-        elif self._recording and self._rec_mode == 1: # rec in merge mode
-            rec_data = np.frombuffer(in_data, dtype=np.float32)
-            self._deq_data.append(rec_data)
-
         elif self._wiring:
             out_data = in_data
+
+        if self._playing:
+            if curpos < curlen:
+                curtrack.write_sound(out_data, data_count)
+            else:
+                if self._playing and not self._recording:
+                    self.pause()
+                    pos = self.samples_to_sec(curpos)
+                    msg = f"Paused at: {pos:.3f} Secs"
+                    self.notify(msg)
 
         # beep()
         if not isinstance(out_data, bytes):
@@ -541,13 +546,12 @@ class AudiPlayer(object):
 
 
     def start_record(self):
+        if not self._curtrack: return
         self._rec_pos = self.get_position()
         if self._rec_mode == 0: # replace mode
-            self._playing =0
-        else:
-            self._playing =1
+            self._curtrack.set_arm_muted(1)
+        self._playing =1
         self._recording =1
-        self._mixing =0
         self._rewing =0
         if not self.is_running():
             self.start_driver()
@@ -558,6 +562,7 @@ class AudiPlayer(object):
     def stop_record(self):
         print("Stop Recording...")
         self._recording =0
+        self._curtrack.set_arm_muted(0)
         self.arrange_track()
         if len(self._deq_data):
             self._deq_data.clear()
