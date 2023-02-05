@@ -245,6 +245,7 @@ class AudiTrack(object):
         from AudiTrack object
         """
 
+        vol =0.5
         curdata = self._buf_arr
         if not curdata.size: return
         pos = self._pos
@@ -258,11 +259,103 @@ class AudiTrack(object):
         else:
             for i in range(data_count):
                 if pos < _len:
-                    out_data[i] = curdata[pos]
+                    # attenuate amplitude data before adding it, cause others data are allready attenuated
+                    val = curdata[pos] * vol
+                    out_data[i] = (out_data[i] + val)
                     pos += 1
         self._pos = pos
     
     #-----------------------------------------
+#========================================
+
+class AudiMetronome(AudiTrack):
+    """ Metronome V5, Generating click with static array for tone and dynamic silence """
+    def __init__(self, bpm=100):
+        super(AudiMetronome, self).__init__()
+        self._bpm = bpm
+        self._rate =44100
+        self._channels =2
+        self._curpos =0
+        self._index =0
+        # can use get_sine_table function for generating array
+        self._tonelen =0.060 # in sec
+        tempo = float(60 / bpm)
+        val = tempo - self._tonelen
+        self._blanklen = int(val * self._rate * self._channels) # in nbsamples
+        tone1 =  self.get_sine_table(880, self._rate, self._tonelen) # tone 1
+        tone2 =  self.get_sine_table(440, self._rate, self._tonelen) # tone 2
+        self._blank = np.zeros([]) # empty, not necessary
+        self._objlist = [tone1, None, tone2, None,
+                tone2, None, tone2, None
+                ]
+        self._objlen = len(self._objlist)
+
+    #----------------------------------------
+
+    def change_bpm(self, bpm):
+        """ 
+        change blank len value belong the bpm 
+        """
+        tempo = (60 / bpm) # in sec
+        # substract tone len
+        val = tempo - self._tonelen
+        # calculate nbsamples for the blank beat
+        self._blanklen = int(val * self._rate * self._channels)
+
+    #----------------------------------------
+
+    def get_sine_table(self, freq, rate, _len):
+        """ returns array of sine wave """
+        incr = (2 * np.pi * freq) / (rate * self._channels)
+        nbsamples = rate * _len * self._channels
+        arr = np.arange(nbsamples)
+        
+        _arr = np.sin(incr * arr)
+        return np.float32(_arr)
+        
+    #-------------------------------------------
+     
+    def _next_obj(self):
+        # self._index = self._index +1 % self._objlen
+        if self._index >= self._objlen -1:
+            self._index =0
+        else: self._index += 1
+        self._curpos =0
+        
+    #----------------------------------------
+
+    def write_sound(self, out_data, count):
+        """
+        write sound data
+        from AudiMetronome object
+        """
+
+        vol =0.5
+        curdata = self._objlist[self._index]
+        if curdata is None: curlen = self._blanklen
+        else: curlen = curdata.size
+        pos = self._curpos
+        for i in range(count):
+            if pos >= curlen:
+                self._next_obj()
+                curdata = self._objlist[self._index]
+                if curdata is None: curlen = self._blanklen
+                else: curlen = curdata.size
+                pos = self._curpos
+            
+            if pos < curlen and curdata is None:
+                # blank click, so do nothing
+                # out_data[i] =0
+                pos += 1
+
+            elif pos < curlen:
+                val = curdata[pos] * vol # isolate the atenuation
+                out_data[i] = (out_data[i] + val)
+                pos += 1
+        self._curpos = pos
+
+    #----------------------------------------
+
 #========================================
 
 class AudiPlayer(object):
@@ -285,6 +378,7 @@ class AudiPlayer(object):
         self._rec_startpos =0
         self._rec_endpos =0
         self._rec_mode =0 # replace mode
+        self._metro = AudiMetronome()
         pass
 
     #-------------------------------------------
@@ -310,6 +404,7 @@ class AudiPlayer(object):
         self._curtrack = AudiTrack()
         arr = get_sine_table(freq=440, rate=44100, channels=2, _len=5)
         self._curtrack.set_data(arr)
+        self._metro.change_bpm(bpm=120)
 
     
     #-------------------------------------------
@@ -358,7 +453,8 @@ class AudiPlayer(object):
         data_count = frame_count  * self._channels
         out_data = np.zeros(data_count, dtype=np.float32)
         # print(f"frame_count: {frame_count}")
-        
+
+       
         curtrack = self._curtrack
         curdata = curtrack.get_data()
         curpos = curtrack._pos
@@ -370,6 +466,7 @@ class AudiPlayer(object):
         elif self._wiring:
             out_data = in_data
 
+        # """
         if self._playing:
             if curpos < curlen:
                 curtrack.write_sound(out_data, data_count)
@@ -379,7 +476,11 @@ class AudiPlayer(object):
                     pos = self.samples_to_sec(curpos)
                     msg = f"Paused at: {pos:.3f} Secs"
                     self.notify(msg)
-
+        # """
+        
+        # for the metronome at last, to prevent apply effects on it.
+        self._metro.write_sound(out_data, data_count)
+     
         # beep()
         if not isinstance(out_data, bytes):
             return (out_data.tobytes(), flag_continue)
