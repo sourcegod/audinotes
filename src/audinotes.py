@@ -53,7 +53,7 @@ def beep():
 
 #-------------------------------------------
 
-def get_sine_table(freq=440, rate=44100, channels=1, _len=5):
+def gen_sine_table(freq=440, rate=44100, channels=1, _len=5):
     """ returns array of sine wave """
     # Note IMPORTANT: dont forget to enclose in parenthesis (rate * channels)
     # because I searched the problem during a whole night
@@ -239,7 +239,7 @@ class AudiTrack(object):
 
     #-----------------------------------------
 
-    def write_sound(self, out_data, data_count):
+    def write_sound_data(self, out_data, data_count):
         """
         writing curdata to the out_data
         from AudiTrack object
@@ -279,18 +279,20 @@ class AudiMetronome(AudiTrack):
     
     def __init__(self, bpm=100):
         super(AudiMetronome, self).__init__()
+        self._mode =0 # dynamic mode
+        self._looping =0
         self._bpm = bpm
         self._rate =44100
         self._channels =2
         self._curpos =0
         self._index =0
-        # can use get_sine_table function for generating array
+        # can use gen_sine_table function for generating array
         self._tonelen =0.060 # in sec
         tempo = float(60 / bpm)
         val = tempo - self._tonelen
         self._blanklen = int(val * self._rate * self._channels) # in nbsamples
-        tone1 =  self.get_sine_table(880, self._rate, self._tonelen) # tone 1
-        tone2 =  self.get_sine_table(440, self._rate, self._tonelen) # tone 2
+        tone1 =  self.gen_sine_table(880, self._rate, self._tonelen) # tone 1
+        tone2 =  self.gen_sine_table(440, self._rate, self._tonelen) # tone 2
         self._blank = np.zeros([]) # empty, not necessary
         self._objlist = [tone1, None, tone2, None,
                 tone2, None, tone2, None
@@ -300,7 +302,7 @@ class AudiMetronome(AudiTrack):
     #----------------------------------------
 
    
-    def get_sine_table(self, freq, rate, _len):
+    def gen_sine_table(self, freq, rate, _len):
         """ returns array of sine wave """
         incr = (2 * np.pi * freq) / (rate * self._channels)
         nbsamples = rate * _len * self._channels
@@ -320,7 +322,7 @@ class AudiMetronome(AudiTrack):
         
     #----------------------------------------
 
-    def write_sound(self, out_data, count):
+    def write_sound_data(self, out_data, count):
         """
         write sound data
         from AudiMetronome object
@@ -470,7 +472,7 @@ class AudiPlayer(object):
         self._rate = self._audio_driver._rate
         self._buf_size = self._audio_driver._buf_size
         self._curtrack = AudiTrack()
-        arr = get_sine_table(freq=440, rate=44100, channels=2, _len=5)
+        arr = gen_sine_table(freq=440, rate=44100, channels=2, _len=5)
         self._curtrack.set_data(arr)
         self._clicktrack.set_bpm(bpm=120)
 
@@ -537,7 +539,7 @@ class AudiPlayer(object):
         # """
         if self._playing:
             if curpos < curlen:
-                curtrack.write_sound(out_data, data_count)
+                curtrack.write_sound_data(out_data, data_count)
             else:
                 if self._playing and not self._recording:
                     self.pause()
@@ -548,7 +550,7 @@ class AudiPlayer(object):
         
         # for the metronome at last, to prevent apply effects on it.
         if self._clicktrack._active:
-            self._clicktrack.write_sound(out_data, data_count)
+            self._clicktrack.write_sound_data(out_data, data_count)
      
         # beep()
         if not isinstance(out_data, bytes):
