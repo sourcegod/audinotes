@@ -269,7 +269,14 @@ class AudiTrack(object):
 #========================================
 
 class AudiMetronome(AudiTrack):
-    """ Metronome V5, Generating click with static array for tone and dynamic silence """
+    """ 
+    Metronome V5, very efficient and dynamic metronome
+    Generating click with static array for tone and dynamic silence 
+    Note: TODO: adding mode 1, for generating click with only static array
+    and create get_data function to retrieve this array.
+
+    """
+    
     def __init__(self, bpm=100):
         super(AudiMetronome, self).__init__()
         self._bpm = bpm
@@ -292,18 +299,7 @@ class AudiMetronome(AudiTrack):
 
     #----------------------------------------
 
-    def change_bpm(self, bpm):
-        """ 
-        change blank len value belong the bpm 
-        """
-        tempo = (60 / bpm) # in sec
-        # substract tone len
-        val = tempo - self._tonelen
-        # calculate nbsamples for the blank beat
-        self._blanklen = int(val * self._rate * self._channels)
-
-    #----------------------------------------
-
+   
     def get_sine_table(self, freq, rate, _len):
         """ returns array of sine wave """
         incr = (2 * np.pi * freq) / (rate * self._channels)
@@ -356,6 +352,78 @@ class AudiMetronome(AudiTrack):
 
     #----------------------------------------
 
+    def get_bpm(self):
+        """ 
+        returns the bpm 
+        from AudiMetronome object
+        """
+        
+        return self._bpm
+
+    #----------------------------------------
+
+    def set_bpm(self, bpm=100):
+        """ 
+        sets the bpm 
+        from AudiMetronome object
+        change blank len value belong the bpm 
+        """
+        
+        if bpm >0 and bpm <= 1000:
+            self.gen_click(bpm)
+            self._bpm = bpm
+
+    #----------------------------------------
+
+    def gen_click(self, bpm, mode=0):
+        """
+        change blank len value belong the bpm 
+        generate the arrays for clicks
+        mode 0: for dynamic blank,
+        mode 1: for static array for beats
+        from AudiMetronome object
+        """
+
+        tempo = (60 / bpm) # in sec
+        # substract tone len
+        val = tempo - self._tonelen
+        # calculate nbsamples for the blank beat
+        self._blanklen = int(val * self._rate * self._channels)
+
+    #----------------------------------------
+
+    def start_click(self):
+        """
+        start stop the clicking
+        from AudiMetronome object
+        """
+        
+        self._active =1
+       
+    #----------------------------------------
+
+    def pause_click(self):
+        """
+        stop the clicking without init values
+        from AudiMetronome object
+        """
+        
+        self._active =0
+       
+    #----------------------------------------
+
+    def stop_click(self):
+        """
+        stop the clicking
+        from AudiMetronome object
+        """
+        
+        self._index =0
+        self._curpos =0
+        self._active =0
+       
+    #----------------------------------------
+
 #========================================
 
 class AudiPlayer(object):
@@ -378,7 +446,7 @@ class AudiPlayer(object):
         self._rec_startpos =0
         self._rec_endpos =0
         self._rec_mode =0 # replace mode
-        self._metro = AudiMetronome()
+        self._clicktrack = AudiMetronome()
         pass
 
     #-------------------------------------------
@@ -404,7 +472,7 @@ class AudiPlayer(object):
         self._curtrack = AudiTrack()
         arr = get_sine_table(freq=440, rate=44100, channels=2, _len=5)
         self._curtrack.set_data(arr)
-        self._metro.change_bpm(bpm=120)
+        self._clicktrack.set_bpm(bpm=120)
 
     
     #-------------------------------------------
@@ -479,7 +547,8 @@ class AudiPlayer(object):
         # """
         
         # for the metronome at last, to prevent apply effects on it.
-        self._metro.write_sound(out_data, data_count)
+        if self._clicktrack._active:
+            self._clicktrack.write_sound(out_data, data_count)
      
         # beep()
         if not isinstance(out_data, bytes):
@@ -830,6 +899,54 @@ class AudiPlayer(object):
 
     #-----------------------------------------
 
+    def get_bpm(self):
+        """
+        returns the bpm object
+        from AudiPlayer object
+        """
+
+        return self._clicktrack._bpm
+
+    #-----------------------------------------
+
+
+    def set_bpm(self, bpm):
+        """
+        sets the metronome bpm
+        from AudiPlayer object
+        """
+
+        state =0
+        if self._clicktrack._active: 
+            self._clicktrack.stop_click()
+            state =1
+        self._clicktrack.set_bpm(bpm)
+        if state:
+            self._clicktrack.start_click()
+
+        return self._clicktrack._bpm
+    
+#-----------------------------------------
+
+
+
+    def toggle_click(self):
+        """
+        change metronome click state
+        from AudiPlayer object
+        """
+
+        if self._clicktrack._active: 
+            self._clicktrack.stop_click()
+        else: 
+            self._clicktrack.start_click()
+            if not self.is_running():
+                self.start_driver()
+
+        return self._clicktrack._active
+    
+#-----------------------------------------
+
     def samples_to_sec(self, val):
         """ 
         convert samples number to seconds
@@ -892,6 +1009,12 @@ class MainApp(object):
                     pos = self.player.samples_to_sec(pos) # convert to sec
                     msg = f"Pause at: {pos:.3f} secs"
                 self.display(msg)
+            elif val_str == 'k':
+                val = self.player.toggle_click()
+                if val: msg = "Start Clicking"
+                else: msg = "Stop Clicking"
+                self.display(msg)
+
             elif val_str == 'T':
                 self.player.start_driver()
             elif val_str == 'r':
@@ -945,9 +1068,25 @@ class MainApp(object):
                 self.display(msg)
             elif val_str in ('?', 'h',):
                 self.display(_help)
+            elif val_str == 'bpmi':
+                # inc bpm
+                bpm = self.player.get_bpm()
+                bpm = self.player.set_bpm(bpm + 10)
+                msg = f"Inc bpm: {bpm}"
+                self.display(msg)
+            elif val_str == 'bpmd':
+                # Dec bpm
+                bpm = self.player.get_bpm()
+                bpm = self.player.set_bpm(bpm - 10)
+                msg = f"Dec bpm: {bpm}"
+                self.display(msg)
+
             elif val_str == 'dev':
                 self.player.print_devices()
-
+            
+            else:
+                msg = "Command not found"
+                self.display(msg)
 
     #----------------------------------------
 
