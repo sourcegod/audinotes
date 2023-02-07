@@ -167,7 +167,7 @@ class AudiMetronome(object):
         """
         
         self._active =1
-       
+      
     #----------------------------------------
 
     def pause_click(self):

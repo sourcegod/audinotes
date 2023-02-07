@@ -54,7 +54,19 @@ def beep():
 
 #-------------------------------------------
 
-def gen_sine_table(freq=440, rate=44100, channels=1, _len=5):
+# """
+def _mid2freq(note):
+    """
+    return freq number from note midi number
+    """
+
+    return 440.0 * pow(2, (note - 69) / 12.0)
+
+#-------------------------------------------
+# """
+
+
+def _gen_sine_table(freq=440, rate=44100, channels=1, _len=5):
     """ returns array of sine wave """
     # Note IMPORTANT: dont forget to enclose in parenthesis (rate * channels)
     # because I searched the problem during a whole night
@@ -87,7 +99,32 @@ def gen_sine_table(freq=440, rate=44100, channels=1, _len=5):
 
 #-------------------------------------------
 
-def gen_array(arr, num=1, channels=1):
+def _gen_notes():
+    """
+    generate notes for tests
+    """
+
+    arr_lst = []
+    
+    # C game
+    note_lst = [
+            60, 62, 64, 65, 
+            67, 69, 71, 72,
+            72, 74, 76, 77, 
+            79, 81, 83, 84
+            ]
+    # for freq in range(440, 880, 55):
+    for note in note_lst:
+        freq = _mid2freq(note)
+        arr = _gen_sine_table(freq=freq, rate=44100, channels=2, _len=0.5)
+        arr_lst.append(arr)
+    
+    arr = np.concatenate(arr_lst)
+    return arr
+
+#-------------------------------------------
+
+def _gen_array(arr, num=1, channels=1):
     """ 
     Note: deprecated function
     -- generator for returning slice of numpy array 
@@ -97,6 +134,7 @@ def gen_array(arr, num=1, channels=1):
         yield arr[num*i:num*(i+1)]
 
 #-------------------------------------------
+
 class AudiTrack(object):
     """ Track audio object """
     def __init__(self):
@@ -313,7 +351,8 @@ class AudiPlayer(object):
         self._rate = self._audio_driver._rate
         self._buf_size = self._audio_driver._buf_size
         self._curtrack = AudiTrack()
-        arr = gen_sine_table(freq=440, rate=44100, channels=2, _len=5)
+        # arr = gen_sine_table(freq=440, rate=44100, channels=2, _len=5)
+        arr = _gen_notes()
         self._curtrack.set_data(arr)
         self._clicktrack.set_bpm(bpm=120)
 
@@ -370,14 +409,8 @@ class AudiPlayer(object):
         curdata = curtrack.get_data()
         curpos = curtrack._pos
         curlen = curtrack._len
-        # Test recording before playing to be faster
-        if self._recording:
-            rec_data = np.frombuffer(in_data, dtype=np.float32)
-            self._deq_data.append(rec_data)
-        elif self._wiring:
-            out_data = in_data
-
         # """
+        
         if self._playing:
             if curpos < curlen:
                 curtrack.write_sound_data(out_data, data_count)
@@ -388,6 +421,13 @@ class AudiPlayer(object):
                     msg = f"Paused at: {pos:.3f} Secs"
                     self.notify(msg)
         # """
+        
+        if self._recording:
+            rec_data = np.frombuffer(in_data, dtype=np.float32)
+            self._deq_data.append(rec_data)
+        elif self._wiring:
+            out_data = in_data
+
         
         # for the metronome at last, to prevent apply effects on it.
         if self._clicktrack._active:
@@ -481,10 +521,20 @@ class AudiPlayer(object):
 
 
     def play(self):
+        # temporary
+        clicked =0
+        pos = self.get_position()
+        if pos == 0:
+            if self._clicktrack._active:
+                self._clicktrack.stop_click()
+                clicked =1
         self._playing =1
         if not self.is_running():
             self.start_driver()
         print("Playing...")
+
+        if clicked:
+            self._clicktrack.start_click()
 
     #-----------------------------------------
 
@@ -655,7 +705,7 @@ class AudiPlayer(object):
             time.sleep(0.1)
             self.play()
             pass
-        
+       
     #-----------------------------------------
 
     def get_length(self, unit=0):
@@ -723,8 +773,15 @@ class AudiPlayer(object):
         """
         
         pos =0
-        self.set_position(pos)
+        clicked =0
+        if self._clicktrack._active:
+            self._clicktrack.stop_click()
+            clicked =1
         
+        self.set_position(pos)
+        if clicked:
+            self._clicktrack.start_click()
+    
         return pos
 
     #-----------------------------------------
