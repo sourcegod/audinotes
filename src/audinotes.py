@@ -145,6 +145,8 @@ class AudiTrack(object):
         self._buf_arr = np.array([], dtype=np.float32)
         self._pos =0
         self._len =0
+        self._looping =0
+
 
     #-------------------------------------------
 
@@ -295,9 +297,13 @@ class AudiTrack(object):
             for i in range(data_count):
                 if pos < _len:
                     pos += 1
-        else:
+
+        else: # not muted, not armed
             for i in range(data_count):
-                if pos < _len:
+                if pos +1 >= _len: # End of buffer
+                    if self._looping:
+                        pos =0
+                else:
                     # attenuate amplitude data before adding it, cause others data are allready attenuated
                     val = curdata[pos] * vol
                     out_data[i] = (out_data[i] + val)
@@ -305,6 +311,39 @@ class AudiTrack(object):
         self._pos = pos
     
     #-----------------------------------------
+
+    def set_looping(self, looping):
+        """
+        set looping state
+        from AudiTrack object
+        """
+
+        self._looping = looping
+
+    #-----------------------------------------
+
+    def is_looping(self):
+        """
+        returns looping state
+        from AudiTrack object
+        """
+
+        return self._looping
+
+    #-----------------------------------------
+
+    def toggle_loop(self):
+        """
+        toggle looping state
+        from AudiTrack object
+        """
+
+        self._looping = not self._looping
+        
+        return self._looping
+
+    #-----------------------------------------
+
 #========================================
 
 class AudiPlayer(object):
@@ -845,7 +884,20 @@ class AudiPlayer(object):
 
         return self._clicktrack._active
     
-#-----------------------------------------
+    #-----------------------------------------
+
+    def toggle_loop(self):
+        """
+        change looping state
+        from AudiPlayer object
+        """
+
+        if not self._curtrack: return 0
+
+        return self._curtrack.toggle_loop()
+    
+    #-----------------------------------------
+
 
     def samples_to_sec(self, val):
         """ 
@@ -929,6 +981,11 @@ class MainApp(object):
                 val = self.player.toggle_click()
                 if val: msg = "Start Clicking"
                 else: msg = "Stop Clicking"
+                self.display(msg)
+            elif val_str == 'l':
+                val = self.player.toggle_loop()
+                if val: msg = "Start Looping"
+                else: msg = "Stop Looping"
                 self.display(msg)
 
             elif val_str == 'T':
