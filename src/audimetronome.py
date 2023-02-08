@@ -18,31 +18,28 @@ class AudiMetronome(object):
 
     """
     
-    def __init__(self, bpm=100):
+    def __init__(self, bpm=100, mode=0):
         self._active =0
-        self._mode =0 # dynamic mode
-        self._looping =0
+        self._mode = mode # 0: static mode, 2: dynamic mode
+        self._looping =1
         self._bpm = bpm
         self._rate =44100
         self._channels =2
-        self._curpos =0
+        self._pos =0
+        self._len =0
         self._index =0
-        # can use gen_sine_table function for generating array
-        self._tonelen =0.060 # in sec
-        tempo = float(60 / bpm)
-        val = tempo - self._tonelen
-        self._blanklen = int(val * self._rate * self._channels) # in nbsamples
-        tone1 =  self.gen_sine_table(880, self._rate, self._tonelen) # tone 1
-        tone2 =  self.gen_sine_table(440, self._rate, self._tonelen) # tone 2
-        self._blank = np.zeros([]) # empty, not necessary
-        self._objlist = [tone1, None, tone2, None,
-                tone2, None, tone2, None
-                ]
-        self._objlen = len(self._objlist)
+        self._buf_arr = np.array([], dtype=np.float32)
+        self._blanklen =0 
+        self._tone1 =  None
+        self._tone2 = None
+        self._tonelen =0
+        self._blank_arr = np.zeros([]) # empty, not necessary
+        self._objlist = []
+        self._objlen =0
+        self.init_click()
 
     #----------------------------------------
 
-   
     def gen_sine_table(self, freq, rate, _len):
         """ returns array of sine wave """
         incr = (2 * np.pi * freq) / (rate * self._channels)
@@ -62,42 +59,34 @@ class AudiMetronome(object):
         if self._index >= self._objlen -1:
             self._index =0
         else: self._index += 1
+        
         """
-        self._curpos =0
+        self._pos =0
         
     #----------------------------------------
 
-    def write_sound_data(self, out_data, count):
+    def get_position(self, unit=0):
         """
-        write sound data
-        from AudiMetronome object
+        returns metronome position
+        from Metronome object
         """
 
-        vol =0.5
-        curdata = self._objlist[self._index]
-        if curdata is None: curlen = self._blanklen
-        else: curlen = curdata.size
-        pos = self._curpos
-        for i in range(count):
-            if pos >= curlen:
-                self._next_obj()
-                curdata = self._objlist[self._index]
-                if curdata is None: curlen = self._blanklen
-                else: curlen = curdata.size
-                pos = self._curpos
-            
-            if pos < curlen and curdata is None:
-                # blank click, so do nothing
-                # out_data[i] =0
-                pos += 1
+        return self._pos
 
-            elif pos < curlen:
-                val = curdata[pos] * vol # isolate the atenuation
-                out_data[i] = (out_data[i] + val)
-                pos += 1
-        self._curpos = pos
+    #-----------------------------------------
 
-    #----------------------------------------
+    def set_position(self, pos, unit=0):
+        """
+        set metronome position 
+        from Metronome object
+        """
+
+        if pos <0: pos =0
+        elif pos > self._len: pos = (pos % self._len)
+        
+        self._pos = pos
+
+    #-----------------------------------------
 
     def is_active(self):
         """
@@ -137,11 +126,31 @@ class AudiMetronome(object):
         change blank len value belong the bpm 
         """
         
-        if bpm >0 and bpm <= 1000:
+        if bpm >=30 and bpm <= 1000:
             self.gen_click(bpm)
             self._bpm = bpm
 
     #----------------------------------------
+    
+    def init_click(self):
+        """
+        init the metronome click
+        from Metronome object
+        """
+        
+        # can use gen_sine_table function for generating array
+        self._tonelen =0.060 # in sec
+        self._tempo = float(60 / self._bpm)
+        val = self._tempo - self._tonelen
+        self._blanklen = int(val * self._rate * self._channels) # in nbsamples
+        self._tone1 =  self.gen_sine_table(880, self._rate, self._tonelen) # tone 1
+        self._tone2 =  self.gen_sine_table(440, self._rate, self._tonelen) # tone 2
+        self._blank_arr = np.zeros([]) # empty, not necessary
+        self.gen_click(self._bpm, self._mode)
+        
+
+    #----------------------------------------
+    
 
     def gen_click(self, bpm, mode=0):
         """
@@ -152,11 +161,29 @@ class AudiMetronome(object):
         from AudiMetronome object
         """
 
-        tempo = (60 / bpm) # in sec
+        self._mode = mode
+        self._tempo = (60 / bpm) # in sec
         # substract tone len
-        val = tempo - self._tonelen
-        # calculate nbsamples for the blank beat
+        val = self._tempo - self._tonelen
         self._blanklen = int(val * self._rate * self._channels)
+        self._len = (self._tempo * self._rate * self._channels) * 4
+
+        if mode == 0: # static array mode
+            # calculate nbsamples for the blank beat
+            self._blank_arr = np.zeros(self._blanklen, dtype=np.float32)
+            beat1 = np.concatenate([self._tone1, self._blank_arr])
+            beat2 = np.concatenate([self._tone2, self._blank_arr])
+            self._buf_arr = np.concatenate(
+                    [beat1, beat2, beat2, beat2]
+                    )
+            self._len = self._buf_arr.size 
+            
+        elif mode == 2: # dynamic mode
+            # substract tone len
+            self._objlist = [self._tone1, None, self._tone2, None,
+                self._tone2, None, self._tone2, None
+                ]
+            self._objlen = len(self._objlist)
 
     #----------------------------------------
 
@@ -187,10 +214,62 @@ class AudiMetronome(object):
         """
         
         self._index =0
-        self._curpos =0
+        self._pos =0
         self._active =0
        
     #----------------------------------------
+
+    def write_sound_data(self, out_data, data_count):
+        """
+        write sound data
+        from AudiMetronome object
+        """
+
+        vol =0.5
+        if self._mode == 0: # static array mode
+            curdata = self._buf_arr
+            if not curdata.size: return
+            pos = self._pos
+            self._len = self._buf_arr.size
+            _len = self._len
+            for i in range(data_count):
+                if pos +1 >= _len: # End of buffer
+                    if self._looping:
+                        pos =0
+                else:
+                    # attenuate amplitude data before adding it, cause others data are allready attenuated
+                    val = curdata[pos] * vol
+                    out_data[i] = (out_data[i] + val)
+                    pos += 1
+            self._pos = pos
+ 
+        elif self._mode == 2: # dynamic mode
+            curdata = self._objlist[self._index]
+            if curdata is None: curlen = self._blanklen
+            else: curlen = curdata.size
+            pos = self._pos
+            _len = self._len
+            for i in range(data_count):
+                if pos >= curlen:
+                    self._next_obj()
+                    curdata = self._objlist[self._index]
+                    if curdata is None: curlen = self._blanklen
+                    else: curlen = curdata.size
+                    pos = self._pos
+                
+                if pos < curlen and curdata is None:
+                    # blank click, so do nothing
+                    # out_data[i] =0
+                    pos += 1
+
+                elif pos < curlen:
+                    val = curdata[pos] * vol # isolate the atenuation
+                    out_data[i] = (out_data[i] + val)
+                    pos += 1
+            self._pos = pos
+
+    #----------------------------------------
+
 
 #========================================
 

@@ -367,6 +367,8 @@ class AudiPlayer(object):
         self._rec_endpos =0
         self._rec_mode =0 # replace mode
         self._clicktrack = aumet.AudiMetronome()
+        self._start_playing =0
+        self._start_clicking =0
         pass
 
     #-------------------------------------------
@@ -448,8 +450,17 @@ class AudiPlayer(object):
         curdata = curtrack.get_data()
         curpos = curtrack._pos
         curlen = curtrack._len
+       
+        if self._start_playing:
+            if self._clicktrack._active:
+                self._clicktrack.set_position(curpos)
+            self._start_playing =0
+        elif self._start_clicking:
+            self._clicktrack.set_position(curpos)
+            self._start_clicking =0
+
+
         # """
-        
         if self._playing:
             if curpos < curlen:
                 curtrack.write_sound_data(out_data, data_count)
@@ -562,18 +573,25 @@ class AudiPlayer(object):
     def play(self):
         # temporary
         clicked =0
+        
+        """
         pos = self.get_position()
         if pos == 0:
             if self._clicktrack._active:
                 self._clicktrack.stop_click()
                 clicked =1
+        """
+
         self._playing =1
+        self._start_playing =1
         if not self.is_running():
             self.start_driver()
         print("Playing...")
 
+        """
         if clicked:
             self._clicktrack.start_click()
+        """
 
     #-----------------------------------------
 
@@ -584,6 +602,7 @@ class AudiPlayer(object):
         """
 
         self._playing =0
+        self._start_playing =0
         self._paused =1
         if self._recording:
             self.stop_record()
@@ -592,11 +611,15 @@ class AudiPlayer(object):
      
     def stop(self):
         self._playing =0
+        self._start_playing =0
         if self._recording:
             self.stop_record()
         
         self._wiring =0
         self._curtrack.set_position(0)
+        if self._clicktrack._active:
+            self._clicktrack.stop_click()
+            self._start_clicking =0
         print("Stopped...")
         
     #-----------------------------------------
@@ -812,14 +835,20 @@ class AudiPlayer(object):
         """
         
         pos =0
+        
+        """
         clicked =0
         if self._clicktrack._active:
             self._clicktrack.stop_click()
             clicked =1
+        """
         
         self.set_position(pos)
+        
+        """
         if clicked:
             self._clicktrack.start_click()
+        """
     
         return pos
 
@@ -877,8 +906,10 @@ class AudiPlayer(object):
 
         if self._clicktrack._active: 
             self._clicktrack.stop_click()
+            self._start_clicking =0
         else: 
             self._clicktrack.start_click()
+            self._start_clicking =1
             if not self.is_running():
                 self.start_driver()
 
