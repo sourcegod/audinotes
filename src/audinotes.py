@@ -29,7 +29,7 @@ import readline
 import portdriver as pdv
 import audimetronome as aumet
 
-
+_DEBUG =1
 _help = """ Help on Player
   b: forward
   ?, h: print this help
@@ -48,6 +48,14 @@ _help = """ Help on Player
   sta, status: display player status and position in secs
 
 """
+
+def debug(msg="", title="", bell=True):
+    if _DEBUG:
+        if title: msg = f"{title}: {msg}"
+        print(msg)
+        if bell: print("\a")
+    
+#------------------------------------------------------------------------------
 
 def beep():
     print("\a")
@@ -294,20 +302,24 @@ class AudiTrack(object):
         
         if self._muted or self._arm_muted:
             # dont write any data, just increment curpos
-            for i in range(data_count):
-                if pos < _len:
-                    pos += 1
-
-        else: # not muted, not armed
-            for i in range(data_count):
+            for i in range(0, data_count, 2):
                 if pos +1 >= _len: # End of buffer
                     if self._looping:
                         pos =0
-                else:
+                else: # pos < _len
+                    pos += 2
+
+        else: # not muted, not armed
+            for i in range(0, data_count, 2):
+                if pos +1 >= _len: # End of buffer
+                    if self._looping:
+                        pos =0
+                else: # pos < _len
                     # attenuate amplitude data before adding it, cause others data are allready attenuated
                     val = curdata[pos] * vol
                     out_data[i] = (out_data[i] + val)
-                    pos += 1
+                    out_data[i+1] = (out_data[i+1] + val)
+                    pos += 2
         self._pos = pos
     
     #-----------------------------------------
@@ -462,6 +474,7 @@ class AudiPlayer(object):
 
         # """
         if self._playing:
+            # debug(f"curpos: {curpos}, curlen: {curlen}")
             if curpos < curlen:
                 curtrack.write_sound_data(out_data, data_count)
             else:

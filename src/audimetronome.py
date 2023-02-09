@@ -232,7 +232,7 @@ class AudiMetronome(object):
             pos = self._pos
             self._len = self._buf_arr.size
             _len = self._len
-            for i in range(data_count):
+            for i in range(0, data_count, 2):
                 if pos +1 >= _len: # End of buffer
                     if self._looping:
                         pos =0
@@ -240,7 +240,8 @@ class AudiMetronome(object):
                     # attenuate amplitude data before adding it, cause others data are allready attenuated
                     val = curdata[pos] * vol
                     out_data[i] = (out_data[i] + val)
-                    pos += 1
+                    out_data[i+1] = (out_data[i+1] + val)
+                    pos += 2
             self._pos = pos
  
         elif self._mode == 2: # dynamic mode
@@ -249,7 +250,7 @@ class AudiMetronome(object):
             else: curlen = curdata.size
             pos = self._pos
             _len = self._len
-            for i in range(data_count):
+            for i in range(0, data_count, 2):
                 if pos >= curlen:
                     self._next_obj()
                     curdata = self._objlist[self._index]
@@ -260,12 +261,13 @@ class AudiMetronome(object):
                 if pos < curlen and curdata is None:
                     # blank click, so do nothing
                     # out_data[i] =0
-                    pos += 1
+                    pos += 2
 
                 elif pos < curlen:
                     val = curdata[pos] * vol # isolate the atenuation
                     out_data[i] = (out_data[i] + val)
-                    pos += 1
+                    out_data[i+1] = (out_data[i+1] + val)
+                    pos += 2
             self._pos = pos
 
     #----------------------------------------
