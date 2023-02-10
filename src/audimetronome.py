@@ -27,6 +27,7 @@ class AudiMetronome(object):
         self._channels =2
         self._pos =0
         self._len =0
+        self._data_pos =0
         self._index =0
         self._buf_arr = np.array([], dtype=np.float32)
         self._blanklen =0 
@@ -82,7 +83,7 @@ class AudiMetronome(object):
         """
 
         if pos <0: pos =0
-        elif pos > self._len: pos = (pos % self._len)
+        pos = pos % self._len
         
         self._pos = pos
 
@@ -166,7 +167,7 @@ class AudiMetronome(object):
         # substract tone len
         val = self._tempo - self._tonelen
         self._blanklen = int(val * self._rate * self._channels)
-        self._len = (self._tempo * self._rate * self._channels) * 4
+        self._len = (self._tempo * self._rate * self._channels) * 4 * 4
 
         if mode == 0: # static array mode
             # calculate nbsamples for the blank beat
@@ -229,11 +230,12 @@ class AudiMetronome(object):
         if self._mode == 0: # static array mode
             curdata = self._buf_arr
             if not curdata.size: return
-            pos = self._pos
-            self._len = self._buf_arr.size
             _len = self._len
+            pos = self._pos
+
             for i in range(0, data_count, 2):
-                if pos +1 >= _len: # End of buffer
+                if pos >= _len: # End of buffer
+                    # print(f"pos: {pos}, data_pos: {data_pos}, _len: {_len}")
                     if self._looping:
                         pos =0
                 else:

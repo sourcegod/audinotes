@@ -107,13 +107,14 @@ def _gen_sine_table(freq=440, rate=44100, channels=1, _len=5):
 
 #-------------------------------------------
 
-def _gen_notes():
+def _gen_notes(note_lst, _len=0.5, count=1):
     """
     generate notes for tests
     """
 
     arr_lst = []
     
+    """
     # C game
     note_lst = [
             60, 62, 64, 65, 
@@ -121,12 +122,14 @@ def _gen_notes():
             72, 74, 76, 77, 
             79, 81, 83, 84
             ]
-    # for freq in range(440, 880, 55):
-    for note in note_lst:
-        freq = _mid2freq(note)
-        arr = _gen_sine_table(freq=freq, rate=44100, channels=2, _len=0.5)
-        arr_lst.append(arr)
-    
+    """
+
+    for _ in range(count):
+        for note in note_lst:
+            freq = _mid2freq(note)
+            arr = _gen_sine_table(freq=freq, rate=44100, channels=2, _len=_len)
+            arr_lst.append(arr)
+        
     arr = np.concatenate(arr_lst)
     return arr
 
@@ -405,8 +408,21 @@ class AudiPlayer(object):
         self._buf_size = self._audio_driver._buf_size
         self._curtrack = AudiTrack()
         # arr = gen_sine_table(freq=440, rate=44100, channels=2, _len=5)
-        arr = _gen_notes()
+
+        # """
+        # C game
+        note_lst = [
+                60, 62, 64, 65, 
+                67, 69, 71, 72,
+                # 72, 74, 76, 77, 
+                # 79, 81, 83, 84
+                ]
+        # """
+
+        arr = _gen_notes(note_lst, 0.5, 1)
         self._curtrack.set_data(arr)
+        self._curtrack.set_looping(1)
+        self._rec_mode =1
         self._clicktrack.set_bpm(bpm=120)
 
     
@@ -488,6 +504,9 @@ class AudiPlayer(object):
         if self._recording:
             rec_data = np.frombuffer(in_data, dtype=np.float32)
             self._deq_data.append(rec_data)
+            if curpos + data_count >= curlen: # and self._curtrack._looping:
+                debug(f"curpos: {curpos}, curlen: {curlen}")
+                self.stop_record()
         elif self._wiring:
             out_data = in_data
 
@@ -517,7 +536,7 @@ class AudiPlayer(object):
         """ arranging recorded takes with play_track track"""
         
         lst = []
-        vol =0.5 # atenuation
+        vol =0.8 # atenuation
         finished =0
         deq_data = self._deq_data
         len_deq = len(deq_data)
@@ -537,7 +556,12 @@ class AudiPlayer(object):
             deq_data.appendleft(part_data)
         # creating rec_data to adding part_data and the deque items
         rec_data = np.concatenate(deq_data)
-        rec_len = rec_data.size
+        if curtrack._looping:
+            rec_data = rec_data[:play_len]
+            rec_len = rec_data.size
+        else:
+            rec_len = rec_data.size
+
         # resets position after recording
         if rec_len >= play_len:
             finished =1
@@ -577,7 +601,7 @@ class AudiPlayer(object):
                 for i in range(rec_len, play_len):
                     final_data[i] = play_data[i] * vol
             curtrack.set_data(final_data)
-        if  finished:
+        if  finished and not curtrack._looping:
             curtrack.set_position(rec_len)
     
     #-----------------------------------------
@@ -848,21 +872,8 @@ class AudiPlayer(object):
         """
         
         pos =0
-        
-        """
-        clicked =0
-        if self._clicktrack._active:
-            self._clicktrack.stop_click()
-            clicked =1
-        """
-        
         self.set_position(pos)
-        
-        """
-        if clicked:
-            self._clicktrack.start_click()
-        """
-    
+   
         return pos
 
     #-----------------------------------------
