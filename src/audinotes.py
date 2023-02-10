@@ -532,6 +532,31 @@ class AudiPlayer(object):
 
     #-----------------------------------------
 
+    def init_track(self):
+        """
+        init current track
+        from AudiPlayer object
+        """
+
+        # """
+        # C game
+        note_lst = [
+                60, 62, 64, 65, 
+                67, 69, 71, 72,
+                # 72, 74, 76, 77, 
+                # 79, 81, 83, 84
+                ]
+        # """
+
+        arr = _gen_notes(note_lst, 0.5, 1)
+        self._curtrack.set_data(arr)
+        self._curtrack.set_looping(1)
+        self._rec_mode =1
+        self._clicktrack.set_bpm(bpm=120)
+
+    
+    #-------------------------------------------
+
     def arrange_track(self):
         """ arranging recorded takes with play_track track"""
         
@@ -1112,9 +1137,26 @@ class MainApp(object):
             elif val_str == 'dev':
                 self.player.print_devices()
             
+            elif val_str == 'init':
+                self.player.init_track()
+            elif val_str == 'test':
+                self.test()
+             
             else:
                 msg = "Command not found"
                 self.display(msg)
+
+    #----------------------------------------
+
+    def test(self):
+        """
+        testing function
+        from MainApp object
+        """
+        
+        self.display("Testing...")
+        # self.player.init_track()
+
 
     #----------------------------------------
 
