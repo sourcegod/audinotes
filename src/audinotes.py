@@ -271,6 +271,18 @@ class AudiTrack(object):
 
     #-----------------------------------------
 
+    def toggle_mute(self):
+        """
+        toggle muted state
+        from AudiTrack object
+        """
+
+        self._muted = not self._muted
+        
+        return self._muted
+
+    #-----------------------------------------
+
     def is_arm_muted(self):
         """
         return internal mute state for armed track
@@ -290,6 +302,39 @@ class AudiTrack(object):
         self._arm_muted  = arm_muted
 
     #-----------------------------------------
+
+    def set_looping(self, looping):
+        """
+        set looping state
+        from AudiTrack object
+        """
+
+        self._looping = looping
+
+    #-----------------------------------------
+
+    def is_looping(self):
+        """
+        returns looping state
+        from AudiTrack object
+        """
+
+        return self._looping
+
+    #-----------------------------------------
+
+    def toggle_loop(self):
+        """
+        toggle looping state
+        from AudiTrack object
+        """
+
+        self._looping = not self._looping
+        
+        return self._looping
+
+    #-----------------------------------------
+
 
     def write_sound_data(self, out_data, data_count):
         """
@@ -325,38 +370,6 @@ class AudiTrack(object):
                     pos += 2
         self._pos = pos
     
-    #-----------------------------------------
-
-    def set_looping(self, looping):
-        """
-        set looping state
-        from AudiTrack object
-        """
-
-        self._looping = looping
-
-    #-----------------------------------------
-
-    def is_looping(self):
-        """
-        returns looping state
-        from AudiTrack object
-        """
-
-        return self._looping
-
-    #-----------------------------------------
-
-    def toggle_loop(self):
-        """
-        toggle looping state
-        from AudiTrack object
-        """
-
-        self._looping = not self._looping
-        
-        return self._looping
-
     #-----------------------------------------
 
 #========================================
@@ -973,11 +986,20 @@ class AudiPlayer(object):
         """
 
         if not self._curtrack: return 0
-
         return self._curtrack.toggle_loop()
     
     #-----------------------------------------
 
+    def toggle_mute(self):
+        """
+        change muted state
+        from AudiPlayer object
+        """
+
+        if not self._curtrack: return 0
+        return self._curtrack.toggle_mute()
+    
+    #-----------------------------------------
 
     def samples_to_sec(self, val):
         """ 
@@ -1106,6 +1128,11 @@ class MainApp(object):
                 pos = self.player.rewind()
                 pos = self.player.samples_to_sec(pos)
                 msg = f"Time at: {pos:.3f} Secs"
+                self.display(msg)
+            elif val_str == 'x':
+                val = self.player.toggle_mute()
+                if val: msg = "Muted On"
+                else: msg = "Muted Off"
                 self.display(msg)
             elif val_str == 'z': # wiring
                 self.player.recwire()
