@@ -1,0 +1,18 @@
+-- TODO list for audinotes
+Date: Sat, 11/02/2023
+Last update: Sat, 11/02/2023
+
+Date: Sat, 11/02/2023
+-- Split audinotes.py classes in multiple files like:
+AudiTrack, MainApp, audicli.py, audicui.py, and maybe audigui.py for graphical User
+Interface
+
+-- In portdriver.py, add stream playback only, and another stream play and
+record with current Stream to choose between both.
+
+-- In commandline Interpreter function, adding arguments as parameters for the
+commands.
+
+-- Create AudiTools class with:
+arrange_track, replace_array, merge_array, and _gen_notes functions.
+
