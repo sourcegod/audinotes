@@ -37,6 +37,8 @@ class AudiMetronome(object):
         self._blank_arr = np.zeros([]) # empty, not necessary
         self._objlist = []
         self._objlen =0
+        self._data_len =0
+        self._data_pos =0
         self.init_click()
 
     #----------------------------------------
@@ -83,7 +85,8 @@ class AudiMetronome(object):
         """
 
         if pos <0: pos =0
-        pos = pos % self._len
+        elif pos > self._len: pos = self._len
+        self._data_pos = int(pos % self._data_len)
         
         self._pos = pos
 
@@ -167,7 +170,8 @@ class AudiMetronome(object):
         # substract tone len
         val = self._tempo - self._tonelen
         self._blanklen = int(val * self._rate * self._channels)
-        self._len = (self._tempo * self._rate * self._channels) * 4 * 4
+        # metronome's length must be determined by the longest track
+        self._len = (self._tempo * self._rate * self._channels) * 4 * 4 # 4 beats multiply by 4 arbitrary bars
 
         if mode == 0: # static array mode
             # calculate nbsamples for the blank beat
@@ -177,7 +181,9 @@ class AudiMetronome(object):
             self._buf_arr = np.concatenate(
                     [beat1, beat2, beat2, beat2]
                     )
-            self._len = self._buf_arr.size 
+            # self._len = self._buf_arr.size 
+            self._data_len = self._buf_arr.size
+
             
         elif mode == 2: # dynamic mode
             # substract tone len
@@ -232,19 +238,28 @@ class AudiMetronome(object):
             if not curdata.size: return
             _len = self._len
             pos = self._pos
+            data_len = self._data_len
+            data_pos = self._data_pos
 
             for i in range(0, data_count, 2):
                 if pos >= _len: # End of buffer
                     # print(f"pos: {pos}, data_pos: {data_pos}, _len: {_len}")
                     if self._looping:
                         pos =0
+                    else:
+                        break
+                if data_pos >= data_len: 
+                    data_pos =0
                 else:
                     # attenuate amplitude data before adding it, cause others data are allready attenuated
-                    val = curdata[pos] * vol
+                    # print(f"data_pos: {data_pos}")
+                    val = curdata[data_pos] * vol
                     out_data[i] = (out_data[i] + val)
                     out_data[i+1] = (out_data[i+1] + val)
                     pos += 2
+                    data_pos +=2
             self._pos = pos
+            self._data_pos = data_pos
  
         elif self._mode == 2: # dynamic mode
             curdata = self._objlist[self._index]
