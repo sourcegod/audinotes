@@ -28,6 +28,7 @@ from collections import deque
 import readline
 import portdriver as pdv
 import audimetronome as aumet
+import auditrack as autra
 
 _DEBUG =1
 _help = """ Help on Player
@@ -191,7 +192,7 @@ class AudiPlayer(object):
         self._channels = self._audio_driver._channels
         self._rate = self._audio_driver._rate
         self._buf_size = self._audio_driver._buf_size
-        self._curtrack = AudiTrack()
+        self._curtrack = autra.AudiTrack()
         # arr = gen_sine_table(freq=440, rate=44100, channels=2, _len=5)
 
         # """
