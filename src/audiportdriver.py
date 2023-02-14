@@ -8,7 +8,7 @@
     Version: 0.3
     -- Updating: change file name from portdriver.py to audiportdriver.py
     -- Change klass name from PortDriver to AudiPortDriver
-
+    -- Adding functions: get_input_latency, get_output_latency
 
     Last update: Wed, 01/02/2023
     Version: 0.2
