@@ -1,8 +1,14 @@
 #!/usr/bin/python3 
 """
-    File: portdriver.py
+    File: audiportdriver.py
     portdriver module
     Portaudio module with pyaudio
+    
+    Last update: Tue, 14/02/2023
+    Version: 0.3
+    -- Updating: change file name from portdriver.py to audiportdriver.py
+    -- Change klass name from PortDriver to AudiPortDriver
+
 
     Last update: Wed, 01/02/2023
     Version: 0.2
@@ -16,7 +22,7 @@
 """
 import pyaudio
 
-class PortDriver(object):
+class AudiPortDriver(object):
     """ PortAudio driver manager  """
     def __init__(self):
         self._pa = pyaudio.PyAudio()
@@ -213,7 +219,7 @@ class PortDriver(object):
 #========================================
 
 def main():
-    _audio_driver = PortDriver()
+    _audio_driver = AudiPortDriver()
     _audio_driver.print_devices()
 
 #-----------------------------------------

@@ -9,7 +9,7 @@
 import time
 import numpy as np
 from collections import deque
-import portdriver as pdv
+import audiportdriver as aupor
 import audimetronome as aumet
 import auditrack as autra
 import auditools as autol
@@ -57,7 +57,7 @@ class AudiPlayer(object):
     #-------------------------------------------
     
     def init_player(self, input_device_index, output_device_index):
-        self._audio_driver = pdv.PortDriver()
+        self._audio_driver = aupor.AudiPortDriver()
         self._audio_driver.init_devices(input_device_index, output_device_index)
         self._audio_driver.set_audio_callback(self._audio_callback)
         self._audio_driver.open()
