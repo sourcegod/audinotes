@@ -229,8 +229,14 @@ class MainApp(object):
         """
         
         self.display("Testing...")
-        # self.player.init_track()
 
+        lat_ms = self.player._input_latency + self.player._output_latency # latency in msec
+        rate = self.player._rate
+        channels = self.player._channels
+        shift_samples = int(lat_ms * rate * channels) # in samples
+        print(f"lat_ms: {lat_ms}, rate: {rate}, channels: {channels}")
+        print(f"Shift Samples: {shift_samples}")
+        # self.player.init_track()
 
     #----------------------------------------
 

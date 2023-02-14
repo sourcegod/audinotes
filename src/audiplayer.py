@@ -36,6 +36,9 @@ class AudiPlayer(object):
         self._deq_data = deque()
         self._data_size = self._buf_size * self._channels
         self._sample_unit = self._rate * self._channels
+        self._input_latency =0
+        self._output_latency =0
+        self._shift_samples =0 # shifting samples number for latency
         self._rec_startpos =0
         self._rec_endpos =0
         self._rec_mode =0 # replace mode
@@ -64,6 +67,10 @@ class AudiPlayer(object):
         self._channels = self._audio_driver._channels
         self._rate = self._audio_driver._rate
         self._buf_size = self._audio_driver._buf_size
+        self._input_latency = self._audio_driver._input_latency
+        self._output_latency = self._audio_driver._output_latency
+        lat_ms = self._input_latency + self._output_latency # latency in msec
+        self._shift_samples = int(lat_ms * self._rate * self._channels) # in samples
         self._curtrack = autra.AudiTrack()
         # arr = gen_sine_table(freq=440, rate=44100, channels=2, _len=5)
 
@@ -162,9 +169,11 @@ class AudiPlayer(object):
         if self._recording:
             rec_data = np.frombuffer(in_data, dtype=np.float32)
             self._deq_data.append(rec_data)
-            if curpos + data_count >= curlen: # and self._curtrack._looping:
-                debug(f"curpos: {curpos}, curlen: {curlen}")
+            if curpos + data_count >= curlen and self._curtrack._looping:
+                # debug(f"curpos: {curpos}, curlen: {curlen}")
                 self.stop_record()
+                # self.arrange_track()
+                pass
         elif self._wiring:
             out_data = in_data
 
@@ -216,9 +225,13 @@ class AudiPlayer(object):
     #-------------------------------------------
 
     def arrange_track(self):
-        """ arranging recorded takes with play_track track"""
+        """ 
+        arranging recorded takes with play_track track
+        Note: When recorded data is too long, this function consume too time to execute, 
+        therefore, audio_callback function set Status Error 6, certainely, Underflow.
+        Use a separate thread must be better.
+        """
         
-        lst = []
         vol =0.8 # atenuation
         finished =0
         deq_data = self._deq_data
@@ -229,12 +242,16 @@ class AudiPlayer(object):
         if not curtrack: return
         play_data = curtrack.get_data()
         play_len = play_data.size
+        # extract recorded samples for latency
         if self._rec_startpos > 0 and self._rec_startpos <= play_len:
             # copy play_data part
             if self._rec_mode == 0: # replace mode
-                part_data = play_data[:self._rec_startpos]
+                part_data = play_data[self._shift_samples:self._rec_startpos]
             else:
+                if self._rec_startpos > self._shift_samples:
+                    self._rec_startpos -= self._shift_samples
                 part_data = np.zeros(self._rec_startpos)
+            # part_data = part_data[1764:]
             # using deq appendleft method for better performance than a list, no need to create a new list
             deq_data.appendleft(part_data)
         # creating rec_data to adding part_data and the deque items
@@ -286,6 +303,8 @@ class AudiPlayer(object):
             curtrack.set_data(final_data)
         if  finished and not curtrack._looping:
             curtrack.set_position(rec_len)
+            pass
+        # time.sleep(3)
     
     #-----------------------------------------
 

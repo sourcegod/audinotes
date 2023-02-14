@@ -39,6 +39,8 @@ class AudiPortDriver(object):
         self._default_output_index = None
         self._callback_func = None
         self._running = False
+        self._input_latency =0
+        self._output_latency =0
 
     #-------------------------------------------
 
@@ -79,6 +81,26 @@ class AudiPortDriver(object):
             except OSError as err:
                 print("[PortAudio Error]: error to open input or output device index", err)
                 self._stream = None
+        # get stream latency
+        if self._stream:
+            self._input_latency = self._stream.get_input_latency()
+            self._output_latency = self._stream.get_output_latency()
+
+    #-----------------------------------------
+
+    def get_input_latency(self):
+        if self._stream:
+            return self._stream.get_input_latency()
+
+        return 0
+
+    #-----------------------------------------
+
+    def get_output_latency(self):
+        if self._stream:
+            return self._stream.get_output_latency()
+
+        return 0
 
     #-----------------------------------------
 
@@ -87,6 +109,10 @@ class AudiPortDriver(object):
             self._stream.start_stream()
             print("Starting Engine...")
             self._running = True
+        if self._stream:
+            input_latency = self._stream.get_input_latency()
+            output_latency = self._stream.get_output_latency()
+            print(f"Input latency: {input_latency:.3f}, output latency: {output_latency:.3f}")
         
     #-----------------------------------------
 
@@ -196,6 +222,9 @@ class AudiPortDriver(object):
             maxOutputChannels = dic['maxOutputChannels']
             print(f"{index} {name},", \
                     f"{hostName} ({maxInputChannels}, {maxOutputChannels}")
+        
+        print("Devices latencies")
+        print(f"input latency: {self._input_latency:.3f}, output latency: {self._output_latency:.3f}")
 
     #-----------------------------------------
 
@@ -221,6 +250,11 @@ class AudiPortDriver(object):
 def main():
     _audio_driver = AudiPortDriver()
     _audio_driver.print_devices()
+    stream = _audio_driver.open()
+    print("After opening stream")
+    input_latency = _audio_driver.get_input_latency()
+    output_latency = _audio_driver.get_output_latency()
+    print(f"input latency: {input_latency:.3f}, output latency: {output_latency:.3f}")
 
 #-----------------------------------------
 
