@@ -3,7 +3,19 @@
     File: audiportdriver.py
     portdriver module
     Portaudio module with pyaudio
+
+    Last update: Wed, 15/02/2023
+    Modifying the audio buffer size from 1024 to 256 for better performance, 
+    less latencywhen recording.
+    Note: 
+    -- With Default Soundcard,
+    buf_size=1024: latency=0.046 msec
+    buf_size=256: latency=0.021 msec 
     
+    -- With Scarlett 2i2 Soundcard,
+    buf_size=1024: latency=0.023 msec
+    buf_size=256: latency=0.012 msec 
+
     Last update: Tue, 14/02/2023
     Version: 0.3
     -- Updating: change file name from portdriver.py to audiportdriver.py
@@ -27,7 +39,8 @@ class AudiPortDriver(object):
     def __init__(self):
         self._pa = pyaudio.PyAudio()
         self._stream = None
-        self._buf_size = 1024
+        # Better latency with 256: 0.012 msec for Scarlett 2i2 Soundcard
+        self._buf_size = 256 # 1024
         self._rate =44100
         self._channels =2 # FIX: work fine with channels 2
         # Format work with paInt16 or paFloat32, for default Soundcard.

@@ -42,6 +42,7 @@ class AudiPlayer(object):
         self._rec_startpos =0
         self._rec_endpos =0
         self._rec_mode =0 # replace mode
+        self._rec_shifting =0 # recalculate rec track basec on latency value
         self._clicktrack = aumet.AudiMetronome()
         self._start_playing =0
         self._start_clicking =0
@@ -234,6 +235,7 @@ class AudiPlayer(object):
         
         vol =0.8 # atenuation
         finished =0
+        shift_samples =0
         deq_data = self._deq_data
         len_deq = len(deq_data)
         if not len_deq: return
@@ -243,13 +245,15 @@ class AudiPlayer(object):
         play_data = curtrack.get_data()
         play_len = play_data.size
         # extract recorded samples for latency
+        if self._rec_shifting:
+            shift_samples = self._shift_samples
         if self._rec_startpos > 0 and self._rec_startpos <= play_len:
             # copy play_data part
             if self._rec_mode == 0: # replace mode
-                part_data = play_data[self._shift_samples:self._rec_startpos]
+                part_data = play_data[shift_samples:self._rec_startpos]
             else:
-                if self._rec_startpos > self._shift_samples:
-                    self._rec_startpos -= self._shift_samples
+                if self._rec_startpos > shift_samples:
+                    self._rec_startpos -= shift_samples
                 part_data = np.zeros(self._rec_startpos)
             # part_data = part_data[1764:]
             # using deq appendleft method for better performance than a list, no need to create a new list
@@ -258,9 +262,8 @@ class AudiPlayer(object):
         rec_data = np.concatenate(deq_data)
         if curtrack._looping:
             rec_data = rec_data[:play_len]
-            rec_len = rec_data.size
-        else:
-            rec_len = rec_data.size
+        rec_data = rec_data[shift_samples:]
+        rec_len = rec_data.size
 
         # resets position after recording
         if rec_len >= play_len:
