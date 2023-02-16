@@ -27,22 +27,31 @@ import readline
 import audiplayer as aupla
 
 _DEBUG =1
-_help = """ Help on Player
+_help = """ Help on AudiNotes Player
   b: forward
-  ?, h: print this help
+  k: toggle click
+  h, ?: print this help
+  l: toggle loop
   p, t, space: toggle play pause
   q, Q: quit
   r: toggle record
   R: toggle record mode (replace, mix)
   S: stop the Engine
   T: start the Engine
-  w: rewind
   v: stop
+  w: rewind
+  x: toggle mute
   z: wiring
   <: goto start
   >: goto end
+
+  bpm: set bpm
+  bpmd: dec bpm
+  bpmi: inc bpm
   dev: display devices infomations
+  init: init track
   sta, status: display player status and position in secs
+  test: testing
 
 """
 
@@ -195,11 +204,11 @@ class MainApp(object):
                 self.display(msg)
             elif val_str in ('?', 'h',):
                 self.display(_help)
-            elif val_str == 'bpmi':
-                # inc bpm
-                bpm = self.player.get_bpm()
-                bpm = self.player.set_bpm(bpm + 10)
-                msg = f"Inc bpm: {bpm}"
+
+            elif val_str == 'bpm':
+                # Set bpm
+                bpm = self.player.set_bpm(120)
+                msg = f"Set bpm: {bpm}"
                 self.display(msg)
             elif val_str == 'bpmd':
                 # Dec bpm
@@ -207,10 +216,14 @@ class MainApp(object):
                 bpm = self.player.set_bpm(bpm - 10)
                 msg = f"Dec bpm: {bpm}"
                 self.display(msg)
-
+            elif val_str == 'bpmi':
+                # inc bpm
+                bpm = self.player.get_bpm()
+                bpm = self.player.set_bpm(bpm + 10)
+                msg = f"Inc bpm: {bpm}"
+                self.display(msg)
             elif val_str == 'dev':
                 self.player.print_devices()
-            
             elif val_str == 'init':
                 self.player.init_track()
             elif val_str == 'test':
