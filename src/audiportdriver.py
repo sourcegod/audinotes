@@ -147,6 +147,18 @@ class AudiPortDriver(object):
 
     #-----------------------------------------
 
+    def init_params(self, channels, rate, format):
+        """ 
+        initialize default params
+        """
+
+        self._channels = channels
+        self._rate = rate
+
+
+    #-------------------------------------------
+
+
     def init_devices(self, input_device_index=None, output_device_index=None):
         """ initialize default devices index """
         self._input_device_index = input_device_index
