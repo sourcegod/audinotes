@@ -91,3 +91,61 @@ def _gen_array(arr, num=1, channels=1):
 #-------------------------------------------
 
 
+def replace_data(play_data, rec_data):
+    """
+    returns replacing array by another
+    from AudiTools object
+    """
+    
+    play_len = play_data.size
+    rec_len = rec_data.size
+    if play_len < rec_len:
+        # Just replacing play_data by rec_data
+        return rec_data
+    elif play_len >= rec_len:
+        # take play_len as longest track
+        final_data = np.zeros(play_len, dtype=np.float32)
+        # Adding rec_data to the final_data
+        for i in range(rec_len):
+            final_data[i] = rec_data[i]
+        # Adding the rest for play_data to the final_data
+        for i in range(rec_len, play_len):
+            final_data[i] = play_data[i]
+        
+        return final_data
+
+#-------------------------------------------
+
+def merge_data(play_data, rec_data, vol):
+    """
+    returns array with merging arrays together
+    from AudiPlayer object
+    """
+    
+    play_len = play_data.size
+    rec_len = rec_data.size
+    final_data = np.array([])
+    if play_len < rec_len:
+        # take rec_len as longest track
+        final_data = np.zeros(rec_len, dtype=np.float32)
+        # Adding play_data + rec_data to the final_data
+        for i in range(play_len):
+            final_data[i] = (play_data[i] + rec_data[i]) * vol
+        # Adding the rest of rec_data to the final_data
+        for i in range(play_len, rec_len):
+            final_data[i] = rec_data[i] * vol
+    elif play_len >= rec_len:
+        # take play_len as longest track
+        final_data = np.zeros(play_len, dtype=np.float32)
+        # Adding rec_data + play_data to the final_data
+        for i in range(rec_len):
+            final_data[i] = (rec_data[i] + play_data[i]) * vol
+        # Adding the rest of play_data to the final_data
+        for i in range(rec_len, play_len):
+            final_data[i] = play_data[i] * vol
+    
+    return final_data
+
+#-------------------------------------------
+
+
