@@ -1,7 +1,78 @@
 -- changelog for audinotes
 Date: Fri, 03/02/2023
-Last update: Sat, 04/02/2023
+Last update: Thu, 16/02/2023
 
+Date: Thu, 16/02/2023
+-- Version 0.3: Good Work
+-- Adding: (bpm command to set bpm) and updating the Help list with new commands
+
+-- Adding: (replace_data, merge_data functions in AudiPlayer class for factorizing
+arrange_track function) 
+
+-- Updating: changing audio buffersize from 1024 to 256
+for better performance, and less latency, and adding capability for shifting
+record track in (arrange_track function) 
+
+-- Updating: (audiportdriver.py module)
+-- Adding: (get_input_latency, get_output_latency function in audiportdriver
+class, and inserting latency evaluation with shift_samples in arrange_track
+function in AudiPlayer class) 
+
+-- Updating: (audinotes module to inserting auditools
+module for gen_notes function) 
+
+-- Updating: (AudiNotes class with separate AudiTrack class) 
+-- Adding: (toggle_mute function in AudiTrack, AudiPlayer classes, and commands 'x'
+in MainApp class to toggle the muted track) 
+
+-- Updating: (metronome synchro with
+independant length and looping) 
+
+-- Adding: (init_track from AudiPlayer class, and
+test function from MainApp class) 
+Updating: (_gen_notes function to pass
+arguments, and arrange_track, _audio_callback functions to record in looping
+mode) 
+
+-- Adding: (debug function in audinotes.py module), and updating (for loop
+to iterate on two channels in AudiTrack, AudiMetronome classes) 
+Adding: (Mod 0,
+for static array mode, Mode 2: for dynamic mode, init_click, gen_click,
+get_position, set_position functions in the AudiMetronome class), and adding:
+(Synchronisation between Current Track and the Metronome in _audio_callback
+function with start_playing and start_clicking state) 
+
+-- Adding: (is_looping,
+set_looping, toggle_loop functions, in AudiTrack class, and command: 'l' in
+MainApp class) 
+
+-- Adding: (_mid2freq, _gen_notes, function), for testing of
+synchro with the metronome 
+Adding file: (audimetronome.py to manage
+AudiMetronome class) 
+-- Adding (Not Compile): (clear_screen function, portable for
+Windows and Linux plateform, in MainApp class), and removed (AudioMetronome in
+audionotes module) 
+
+-- Adding: (get_bpm, set_bpm, gen_click, start_click, stop_click, in AudiMetronome class, and get_bpm,
+set_bpm, toggle_click, functions in AudiPlayer class, and 'bpmi', 'bpmd', as
+commands in MainApp class) Adding: (AudiMetronome class with static array for
+tone beat, and dynamic silence length for blank beat) 
+
+-- Updating: (arrange_track
+function) using (the deque appendleft method instead of the List.append
+method), for really better performance. 
+
+-- Updating: (arrange_track function) to
+resets player position after recording 
+
+-- Adding: (set_arm_muted, is_arm_muted
+functions) and updating (start_record, stop_record functions) to improve
+recording mode. 
+
+-- Adding: (AudiTrack class, and updating audio_callback and
+arrange_track functions to work with it) 
+#------------------------------------------------------------------------------
 
 Last update: Sat, 04/02/2023
 -- Version 0.2: Lite and Simple
