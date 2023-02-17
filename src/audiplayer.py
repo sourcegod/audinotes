@@ -146,9 +146,10 @@ class AudiPlayer(object):
             rec_data = np.frombuffer(in_data, dtype=np.float32)
             self._deq_data.append(rec_data)
             if curpos + data_count >= curlen and self._curtrack._looping:
+                # Note: TODO: find better condition to stop or not the recording when looping
                 # debug(f"curpos: {curpos}, curlen: {curlen}")
-                self.stop_record()
-                # self.arrange_track()
+                # self.stop_record()
+                self.arrange_track()
                 pass
         elif self._wiring:
             out_data = in_data
@@ -194,7 +195,7 @@ class AudiPlayer(object):
                 ]
         # """
 
-        arr = autol._gen_notes(note_lst, 0.5, 1)
+        arr = autol._gen_notes(note_lst, 0.5, 1, self._rate, self._channels)
         self._curtrack.set_data(arr)
         self._curtrack.set_looping(1)
         self._rec_mode =1
@@ -256,7 +257,15 @@ class AudiPlayer(object):
 
         if  finished and not curtrack._looping:
             curtrack.set_position(rec_len)
-    
+        if self._recording and curtrack._looping:
+            self._rec_startpos =0
+        
+        # """
+        if len(self._deq_data):
+            self._deq_data.clear()
+        # """
+
+      
     #-----------------------------------------
 
     def play(self):
@@ -379,9 +388,7 @@ class AudiPlayer(object):
         self._recording =0
         self._curtrack.set_arm_muted(0)
         self.arrange_track()
-        if len(self._deq_data):
-            self._deq_data.clear()
-        
+       
     #-----------------------------------------
     
     def toggle_record(self):

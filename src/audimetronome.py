@@ -113,7 +113,6 @@ class AudiMetronome(object):
 
     #-----------------------------------------
 
-
     def get_bpm(self):
         """ 
         returns the bpm 
