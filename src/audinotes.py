@@ -100,7 +100,7 @@ class MainApp(object):
 
     def init_app(self, input_device_index, output_device_index):
         self.mixer = aumix.AudiMixer()
-        self.mixer.init(channels=2, rate=44100, format=None, input_device_index=input_device_index, output_device_index=output_device_index)
+        self.mixer.init(channels=1, rate=44100, format=None, input_device_index=input_device_index, output_device_index=output_device_index)
         self.audio_driver = self.mixer.audio_driver
 
         self.player = aupla.AudiPlayer(parent=self)

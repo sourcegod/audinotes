@@ -42,6 +42,7 @@ class AudiPlayer(object):
         self._rec_endpos =0
         self._rec_mode =0 # replace mode
         self._rec_shifting =0 # recalculate rec track basec on latency value
+        self._clicktrack = None
         self._clicktrack = aumet.AudiMetronome()
         self._start_playing =0
         self._start_clicking =0
@@ -64,9 +65,9 @@ class AudiPlayer(object):
         self._audio_driver = self._mixer.audio_driver
         self._mixer.set_audio_callback(self._audio_callback)
         self._mixer.open()
-        self._channels = self._audio_driver._channels
-        self._rate = self._audio_driver._rate
-        self._buf_size = self._audio_driver._buf_size
+        channels = self._channels = self._audio_driver._channels
+        rate = self._rate = self._audio_driver._rate
+        buf_size = self._buf_size = self._audio_driver._buf_size
         self._input_latency = self._audio_driver._input_latency
         self._output_latency = self._audio_driver._output_latency
         lat_ms = self._input_latency + self._output_latency # latency in msec
@@ -84,10 +85,11 @@ class AudiPlayer(object):
                 ]
         # """
 
-        arr = autol._gen_notes(note_lst, 0.5, 1)
+        arr = autol._gen_notes(note_lst, 0.5, 1, rate, channels)
         self._curtrack.set_data(arr)
         self._curtrack.set_looping(1)
         self._rec_mode =1
+        self._clicktrack = aumet.AudiMetronome(rate=rate, channels=channels)
         self._clicktrack.set_bpm(bpm=120)
 
     

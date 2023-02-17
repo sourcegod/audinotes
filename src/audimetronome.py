@@ -8,6 +8,7 @@
     Author: Coolbrother
 """
 import numpy as np
+
 class AudiMetronome(object):
     """ 
     Metronome V5, very efficient and dynamic metronome
@@ -18,13 +19,13 @@ class AudiMetronome(object):
 
     """
     
-    def __init__(self, bpm=100, mode=0):
+    def __init__(self, bpm=100, mode=0, rate=44100, channels=1):
+        self._rate = rate
+        self._channels = channels
         self._active =0
         self._mode = mode # 0: static mode, 2: dynamic mode
         self._looping =1
         self._bpm = bpm
-        self._rate =44100
-        self._channels =2
         self._pos =0
         self._len =0
         self._data_pos =0
@@ -43,10 +44,10 @@ class AudiMetronome(object):
 
     #----------------------------------------
 
-    def gen_sine_table(self, freq, rate, _len):
+    def gen_sine_table(self, freq, _len, rate=44100, channels=1):
         """ returns array of sine wave """
-        incr = (2 * np.pi * freq) / (rate * self._channels)
-        nbsamples = rate * _len * self._channels
+        incr = (2 * np.pi * freq) / (rate * channels)
+        nbsamples = rate * _len * channels
         arr = np.arange(nbsamples)
         
         _arr = np.sin(incr * arr)
@@ -147,8 +148,8 @@ class AudiMetronome(object):
         self._tempo = float(60 / self._bpm)
         val = self._tempo - self._tonelen
         self._blanklen = int(val * self._rate * self._channels) # in nbsamples
-        self._tone1 =  self.gen_sine_table(880, self._rate, self._tonelen) # tone 1
-        self._tone2 =  self.gen_sine_table(440, self._rate, self._tonelen) # tone 2
+        self._tone1 =  self.gen_sine_table(880, self._tonelen, self._rate, self._channels) # tone 1
+        self._tone2 =  self.gen_sine_table(440, self._tonelen, self._rate, self._channels) # tone 2
         self._blank_arr = np.zeros([]) # empty, not necessary
         self.gen_click(self._bpm, self._mode)
         
