@@ -43,12 +43,14 @@ class AudiMixer(object):
         self._format =0
     #-----------------------------------------
 
-    def init(self, channels=2, rate=44100, format=0, input_device_index=None, output_device_index=None):
+    def init(self, channels=2, rate=44100, format=None, input_device_index=None, output_device_index=None):
         if self.audio_driver is None: return
         
         self._channels = channels
         self._rate = rate
-        self._format = format
+        if format is None: format = self._format
+        else: self._format = format
+        
         # self.audio_driver.set_callback(self._audio_callback)
         self.audio_driver.init_params(channels, rate, format)
         self.audio_driver.init_devices(input_device_index, output_device_index)
@@ -82,7 +84,7 @@ class AudiMixer(object):
     #-------------------------------------------
      
     def close(self):
-        """ Close the player """
+        """ Close the mixer """
         if self.audio_driver is None: return
         self.audio_driver.stop_engine()
         self.audio_driver.close()
@@ -102,7 +104,7 @@ class AudiMixer(object):
         """
 
         if self.audio_driver is None: return
-        self._audio_driver.print_devices()
+        self.audio_driver.print_devices()
 
     #-------------------------------------------
 

@@ -25,6 +25,7 @@
 import os, sys, time
 import readline
 import audiplayer as aupla
+import audimixer as aumix
 
 _DEBUG =1
 _help = """ Help on AudiNotes Player
@@ -71,8 +72,9 @@ def beep():
 class MainApp(object):
     """ Main application manager """
     def __init__(self):
+        self.mixer = None
         self.player = None
-        pass
+        self.audio_driver = None
 
     #------------------------------------------------------------------------------
 
@@ -97,13 +99,40 @@ class MainApp(object):
     #------------------------------------------------------------------------------
 
     def init_app(self, input_device_index, output_device_index):
+        self.mixer = aumix.AudiMixer()
+        self.mixer.init(channels=2, rate=44100, format=None, input_device_index=input_device_index, output_device_index=output_device_index)
+        self.audio_driver = self.mixer.audio_driver
+
         self.player = aupla.AudiPlayer(parent=self)
-        self.player.init_player(input_device_index, output_device_index)
+        self.player.init_player(self.mixer)
         # pl.start_driver()
         self.clear_screen()
 
     #------------------------------------------------------------------------------
+
+    def start_driver(self):
+        self.mixer.start_driver()
+        beep()
+
+    #-------------------------------------------
+    
+    def stop_driver(self):
+        self.mixer.stop_driver()
+        beep()
+
+    #-------------------------------------------
  
+    def print_devices(self):
+        """
+        display devices info
+        from MainApp object
+        """
+
+        self.mixer.print_devices()
+
+    #-------------------------------------------
+
+
     def main(self, input_device_index, output_device_index):
         self.init_app(input_device_index, output_device_index)
         msg = "Press '?' or 'h' for help"
@@ -147,7 +176,7 @@ class MainApp(object):
                 self.display(msg)
 
             elif val_str == 'T':
-                self.player.start_driver()
+                self.start_driver()
             elif val_str == 'r':
                 # toggle record
                 val = self.player.toggle_record()
@@ -164,7 +193,7 @@ class MainApp(object):
                     msg = "Record mode Mix"
                 self.display(msg)
             elif val_str == 'S':
-                self.player.stop_driver()
+                self.stop_driver()
             elif  val_str in ('sta', 'status'): # Status
                 state = self.player.get_state()
                 pos = self.player.get_position()
@@ -223,7 +252,7 @@ class MainApp(object):
                 msg = f"Inc bpm: {bpm}"
                 self.display(msg)
             elif val_str == 'dev':
-                self.player.print_devices()
+                self.print_devices()
             elif val_str == 'init':
                 self.player.init_track()
             elif val_str == 'test':

@@ -60,11 +60,13 @@ class AudiPlayer(object):
             self._parent.display(msg)
     #-------------------------------------------
     
-    def init_player(self, input_device_index, output_device_index):
-        self._audio_driver = aupor.AudiPortDriver()
-        self._audio_driver.init_devices(input_device_index, output_device_index)
-        self._audio_driver.set_audio_callback(self._audio_callback)
-        self._audio_driver.open()
+    def init_player(self, mixer):
+        self._mixer = mixer
+        # self._audio_driver = aupor.AudiPortDriver()
+        # self._audio_driver.init_devices(input_device_index, output_device_index)
+        self._audio_driver = self._mixer.audio_driver
+        self._mixer.set_audio_callback(self._audio_callback)
+        self._mixer.open()
         self._channels = self._audio_driver._channels
         self._rate = self._audio_driver._rate
         self._buf_size = self._audio_driver._buf_size
@@ -94,38 +96,12 @@ class AudiPlayer(object):
     
     #-------------------------------------------
 
-    def start_driver(self):
-        self._audio_driver.start_engine()
-        beep()
-
-    #-------------------------------------------
     
-    def stop_driver(self):
-        self._audio_driver.stop_engine()
-        beep()
-
-    #-------------------------------------------
-     
     def close(self):
         """ Close the player """
         self.stop()
-        self._audio_driver.stop_engine()
-        self._audio_driver.close()
-
-    #-------------------------------------------
-
-    def is_running(self):
-        return self._audio_driver.is_running()
-
-    #-------------------------------------------
-
-    def print_devices(self):
-        """
-        display devices info
-        from Player object
-        """
-
-        self._audio_driver.print_devices()
+        self._mixer.stop_driver()
+        self._mixer.close()
 
     #-------------------------------------------
 
@@ -298,8 +274,8 @@ class AudiPlayer(object):
 
         self._playing =1
         self._start_playing =1
-        if not self.is_running():
-            self.start_driver()
+        if not self._mixer.is_running():
+            self._mixer.start_driver()
         print("Playing...")
 
         """
@@ -393,8 +369,8 @@ class AudiPlayer(object):
         self._playing =1
         self._recording =1
         self._rewing =0
-        if not self.is_running():
-            self.start_driver()
+        if not self._mixer.is_running():
+            self._mixer.start_driver()
         print("Recording...")
         
     #-----------------------------------------
@@ -442,8 +418,8 @@ class AudiPlayer(object):
         self._playing =0
         self._recording =0
         self._wiring =1
-        if not self.is_running():
-            self.start_driver()
+        if not self._mixer.is_running():
+            self._mixer.start_driver()
         print("Wiring...")
         
     #-----------------------------------------
@@ -611,8 +587,8 @@ class AudiPlayer(object):
         else: 
             self._clicktrack.start_click()
             self._start_clicking =1
-            if not self.is_running():
-                self.start_driver()
+            if not self._mixer.is_running():
+                self._mixer.start_driver()
 
         return self._clicktrack._active
     

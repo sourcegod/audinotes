@@ -51,7 +51,7 @@ def _gen_sine_table(freq=440, rate=44100, channels=1, _len=5):
 
 #-------------------------------------------
 
-def _gen_notes(note_lst, _len=0.5, count=1):
+def _gen_notes(note_lst, _len=0.5, count=1, rate=44100, channels=2):
     """
     generate notes for tests
     """
@@ -71,7 +71,7 @@ def _gen_notes(note_lst, _len=0.5, count=1):
     for _ in range(count):
         for note in note_lst:
             freq = _mid2freq(note)
-            arr = _gen_sine_table(freq=freq, rate=44100, channels=2, _len=_len)
+            arr = _gen_sine_table(freq=freq, _len=_len, rate=rate, channels=channels)
             arr_lst.append(arr)
         
     arr = np.concatenate(arr_lst)
