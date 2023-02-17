@@ -105,20 +105,19 @@ class MainApp(object):
 
         self.player = aupla.AudiPlayer(parent=self)
         self.player.init_player(self.mixer)
-        # pl.start_driver()
+        # pl.start_engine()
         self.clear_screen()
 
     #------------------------------------------------------------------------------
 
-    def start_driver(self):
+    def start_engine(self):
         self.mixer.start_driver()
-        beep()
 
     #-------------------------------------------
     
-    def stop_driver(self):
+    def stop_engine(self):
+        # self.player.stop()
         self.mixer.stop_driver()
-        beep()
 
     #-------------------------------------------
  
@@ -174,9 +173,6 @@ class MainApp(object):
                 if val: msg = "Start Looping"
                 else: msg = "Stop Looping"
                 self.display(msg)
-
-            elif val_str == 'T':
-                self.start_driver()
             elif val_str == 'r':
                 # toggle record
                 val = self.player.toggle_record()
@@ -192,17 +188,6 @@ class MainApp(object):
                 else:
                     msg = "Record mode Mix"
                 self.display(msg)
-            elif val_str == 'S':
-                self.stop_driver()
-            elif  val_str in ('sta', 'status'): # Status
-                state = self.player.get_state()
-                pos = self.player.get_position()
-                pos = self.player.samples_to_sec(pos)
-                # start_loop = self.player.get_start_loop()
-                # end_loop = self.player.get_end_loop()
-                msg = f"{state}, Position: {pos:.3f} Secs"
-                self.display(msg)
-                # self.self.display(msg)
             elif val_str == 'v':
                 self.player.stop()
                 pos = self.player.get_position()
@@ -253,8 +238,20 @@ class MainApp(object):
                 self.display(msg)
             elif val_str == 'dev':
                 self.print_devices()
+            elif val_str == 'engsta':
+                self.start_engine()
+            elif val_str == 'engsto':
+                self.stop_engine()
             elif val_str == 'init':
                 self.player.init_track()
+            elif  val_str in ('sta', 'status'): # Status
+                state = self.player.get_state()
+                pos = self.player.get_position()
+                pos = self.player.samples_to_sec(pos)
+                # start_loop = self.player.get_start_loop()
+                # end_loop = self.player.get_end_loop()
+                msg = f"{state}, Position: {pos:.3f} Secs"
+                self.display(msg)
             elif val_str == 'test':
                 self.test()
              
