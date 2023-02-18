@@ -133,8 +133,10 @@ class MainApp(object):
 
     def change_bpm(self, bpm, adding=0):
         if self.mixer is None: return
-        bpm = float(bpm)
         cur_bpm = self.player.get_bpm()
+        if type(bpm) == str:
+            if bpm[0] in ('+', '-'): adding=1
+        bpm = float(bpm)
         if adding == 1: # is incremental
             bpm += cur_bpm
 
@@ -249,19 +251,9 @@ class MainApp(object):
 
                 elif key == 'bpm':
                     # change bpm
-                    if not param1: param1 = 120
-                    self.change_bpm(param1, adding=0) # not incremental
+                    if not param1: param1 = "120"
+                    self.change_bpm(param1, adding=0) # can be incremental or decremental with (+, -)
                     
-                elif key == 'bpmd':
-                    # Dec bpm
-                    if not param1: param1 =-10
-                    self.change_bpm(param1, adding=1)
-
-                elif key == 'bpmi':
-                    # inc bpm
-                    if not param1: param1 =10
-                    self.change_bpm(param1, adding=1)
-
                 elif key == 'dev':
                     self.print_devices()
                 elif key == 'engsta':
