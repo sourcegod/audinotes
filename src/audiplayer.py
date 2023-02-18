@@ -12,6 +12,7 @@ from collections import deque
 import audimetronome as aumet
 import auditrack as autra
 import auditools as autol
+import threading
 
 def beep():
     print("\a")
@@ -149,7 +150,8 @@ class AudiPlayer(object):
                 # Note: TODO: find better condition to stop or not the recording when looping
                 # debug(f"curpos: {curpos}, curlen: {curlen}")
                 # self.stop_record()
-                self.arrange_track()
+                # self.arrange_track()
+                self._audio_thread(self.arrange_track)
                 pass
         elif self._wiring:
             out_data = in_data
@@ -202,6 +204,16 @@ class AudiPlayer(object):
         self._clicktrack.set_bpm(bpm=120)
 
     
+    #-------------------------------------------
+
+    def _audio_thread(self, func):
+        """
+        running function in a separate thread
+        from AudiPlayer object
+        """
+        
+        threading.Thread(target=func, args=()).start()
+
     #-------------------------------------------
 
     def arrange_track(self):
@@ -260,11 +272,8 @@ class AudiPlayer(object):
         if self._recording and curtrack._looping:
             self._rec_startpos =0
         
-        # """
         if len(self._deq_data):
             self._deq_data.clear()
-        # """
-
       
     #-----------------------------------------
 
@@ -387,7 +396,7 @@ class AudiPlayer(object):
         print("Stop Recording...")
         self._recording =0
         self._curtrack.set_arm_muted(0)
-        self.arrange_track()
+        self._audio_thread(self.arrange_track)
        
     #-----------------------------------------
     
