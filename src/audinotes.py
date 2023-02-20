@@ -110,17 +110,15 @@ class MainApp(object):
 
     #------------------------------------------------------------------------------
 
-    def start_engine(self):
-        self.mixer.start_driver()
+    def change_engine(self, param=None):
+        if param is None: return
+        if param == "on":
+            self.mixer.start_driver()
+        elif param == "off":
+            self.mixer.stop_driver()
 
     #-------------------------------------------
-    
-    def stop_engine(self):
-        # self.player.stop()
-        self.mixer.stop_driver()
 
-    #-------------------------------------------
- 
     def print_devices(self):
         """
         display devices info
@@ -256,10 +254,8 @@ class MainApp(object):
                     
                 elif key == 'dev':
                     self.print_devices()
-                elif key == 'engsta':
-                    self.start_engine()
-                elif key == 'engsto':
-                    self.stop_engine()
+                elif key in ('eng', 'engine'):
+                    self.change_engine(param1)
                 elif key == 'init':
                     self.player.init_track()
                 elif  key in ('sta', 'status'): # Status
