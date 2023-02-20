@@ -37,8 +37,6 @@ _help = """ Help on AudiNotes Player
   q, Q: quit
   r: toggle record
   R: toggle record mode (replace, mix)
-  S: stop the Engine
-  T: start the Engine
   v: stop
   w: rewind
   x: toggle mute
@@ -46,10 +44,9 @@ _help = """ Help on AudiNotes Player
   <: goto start
   >: goto end
 
-  bpm: set bpm
-  bpmd: dec bpm
-  bpmi: inc bpm
+  bpm VAL: set bpm
   dev: display devices infomations
+  eng, engine on/off: toggle audio engine
   init: init track
   sta, status: display player status and position in secs
   test: testing
