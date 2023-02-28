@@ -187,7 +187,6 @@ class AudiPortDriver(object):
 
     #-------------------------------------------
 
-
     def set_audio_callback(self, audio_callback):
         self._callback_func = audio_callback
 
@@ -284,6 +283,15 @@ class AudiPortDriver(object):
         return _pa.get_default_input_device_info().get('defaultOutputDevice')
 
     #-----------------------------------------
+
+    def get_devices_index(self):
+        """ return tuple containing indexes input and output for both channels  
+        """
+
+        return (self._input_device_index, self._output_device_index)
+
+    #-----------------------------------------
+
 
 #========================================
 

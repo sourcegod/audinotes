@@ -105,7 +105,8 @@ class AudiMixer(object):
             is_opened =1
         self.audio_driver.init_devices(input_index, output_index)
         if is_opened: self.audio_driver.open()
-
+        
+        return self.audio_driver.get_devices_index()
 
     #-------------------------------------------
 

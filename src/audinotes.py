@@ -145,8 +145,8 @@ class MainApp(object):
         if self.mixer is None: return
         if input_index is not None: input_index = int(input_index)
         if output_index is not None: output_index = int(output_index)
-        self.mixer.set_audio_devices(input_index, output_index)
-        msg = f"Change devices: {input_index}, {output_index}"
+        (in_index, out_index) = self.mixer.set_audio_devices(input_index, output_index)
+        msg = f"Set Audio devices: ({in_index}, {out_index})"
         self.display(msg)
 
     #-------------------------------------------
