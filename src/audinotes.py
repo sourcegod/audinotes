@@ -141,6 +141,15 @@ class MainApp(object):
 
     #-------------------------------------------
 
+    def set_audio_devices(self, input_index, output_index):
+        if self.mixer is None: return
+        if input_index is not None: input_index = int(input_index)
+        if output_index is not None: output_index = int(output_index)
+        self.mixer.set_audio_devices(input_index, output_index)
+        msg = f"Change devices: {input_index}, {output_index}"
+        self.display(msg)
+
+    #-------------------------------------------
 
     def main(self, input_device_index, output_device_index):
         self.init_app(input_device_index, output_device_index)
@@ -250,7 +259,10 @@ class MainApp(object):
                     self.change_bpm(param1, adding=0) # can be incremental or decremental with (+, -)
                     
                 elif key == 'dev':
-                    self.print_devices()
+                    if param1 is None:
+                        self.print_devices()
+                    else:
+                        self.set_audio_devices(param1, param2)
                 elif key in ('eng', 'engine'):
                     self.change_engine(param1)
                 elif key == 'init':

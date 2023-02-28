@@ -52,8 +52,15 @@ class AudiPortDriver(object):
         self._default_output_index = None
         self._callback_func = None
         self._running = False
+        self._opened = False
         self._input_latency =0
         self._output_latency =0
+
+    #-------------------------------------------
+
+    def __del__(self):
+        self._pa.terminate()
+        print("Terminate the Audio Driver")
 
     #-------------------------------------------
 
@@ -96,6 +103,7 @@ class AudiPortDriver(object):
                 self._stream = None
         # get stream latency
         if self._stream:
+            self._opened = True
             self._input_latency = self._stream.get_input_latency()
             self._output_latency = self._stream.get_output_latency()
 
@@ -140,9 +148,10 @@ class AudiPortDriver(object):
     def close(self):    
         if self._stream:
             self._stream.close()
+            self._stream = None
+            self._opened = False
             print("Closing the Stream")
         
-        self._pa.terminate()
         print("Closing the driver")
 
     #-----------------------------------------
@@ -172,6 +181,12 @@ class AudiPortDriver(object):
         return self._running
 
     #-------------------------------------------
+
+    def is_opened(self):
+        return self._opened
+
+    #-------------------------------------------
+
 
     def set_audio_callback(self, audio_callback):
         self._callback_func = audio_callback

@@ -97,6 +97,18 @@ class AudiMixer(object):
 
     #-------------------------------------------
 
+    def set_audio_devices(self, input_index, output_index):
+        if self.audio_driver is None: return
+        is_opened =0
+        if self.audio_driver.is_opened():
+            self.close();
+            is_opened =1
+        self.audio_driver.init_devices(input_index, output_index)
+        if is_opened: self.audio_driver.open()
+
+
+    #-------------------------------------------
+
     def print_devices(self):
         """
         display devices info
