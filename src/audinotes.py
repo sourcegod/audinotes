@@ -294,12 +294,16 @@ class MainApp(object):
         """
         
         self.display("Testing...")
-
-        lat_ms = self.player._input_latency + self.player._output_latency # latency in msec
-        rate = self.player._rate
-        channels = self.player._channels
+        if self.mixer is None: 
+            msg = "No Audio Mixer is available\n"
+            self.display(msg)
+            return
+        
+        lat_ms = self.mixer.get_input_latency() + self.mixer.get_output_latency() # latency in msec
+        rate = self.mixer.get_audio_rate()
+        channels = self.mixer.get_audio_channels()
         shift_samples = int(lat_ms * rate * channels) # in samples
-        print(f"lat_ms: {lat_ms}, rate: {rate}, channels: {channels}")
+        print(f"lat_ms: {lat_ms:.3f}, rate: {rate}, channels: {channels}")
         print(f"Shift Samples: {shift_samples}")
         # self.player.init_track()
 

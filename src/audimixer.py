@@ -96,6 +96,48 @@ class AudiMixer(object):
         return self.audio_driver.is_running()
 
     #-------------------------------------------
+    def get_audio_channels(self):
+        if self.audio_driver is None: return
+        return self.audio_driver._channels
+
+    #-------------------------------------------
+
+    def set_audio_channels(self, channels):
+        if self.audio_driver is None: return
+        self.audio_driver._channels = channels
+
+    #-------------------------------------------
+
+    def get_audio_rate(self):
+        if self.audio_driver is None: return
+        return self.audio_driver._rate
+
+    #-------------------------------------------
+
+    def set_audio_rate(self, rate):
+        if self.audio_driver is None: return
+        self.audio_driver._rate = rate
+
+    #-------------------------------------------
+
+    def get_buffer_size(self):
+        if self.audio_driver is None: return
+        return self.audio_driver._buf_size
+
+    #-------------------------------------------
+
+    def set_buffer_size(self, buf_size):
+        if self.audio_driver is None: return
+        self.audio_driver._buf_size = buf_size
+
+    #-------------------------------------------
+
+    def get_audio_devices(self):
+        if self.audio_driver is None: return
+
+        return self.audio_driver.get_devices_index()
+
+    #-------------------------------------------
 
     def set_audio_devices(self, input_index, output_index):
         if self.audio_driver is None: return
@@ -106,7 +148,7 @@ class AudiMixer(object):
         self.audio_driver.init_devices(input_index, output_index)
         if is_opened: self.audio_driver.open()
         
-        return self.audio_driver.get_devices_index()
+        return self.get_audio_devices()
 
     #-------------------------------------------
 
@@ -121,6 +163,17 @@ class AudiMixer(object):
 
     #-------------------------------------------
 
+    def get_input_latency(self):
+        if self.audio_driver is None: return
+        return self.audio_driver._input_latency
+
+    #-------------------------------------------
+
+    def get_output_latency(self):
+        if self.audio_driver is None: return
+        return self.audio_driver._output_latency
+
+    #-------------------------------------------
 
 #========================================
 
